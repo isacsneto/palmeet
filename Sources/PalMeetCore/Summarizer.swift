@@ -1,6 +1,7 @@
 import Foundation
 import LLMKit
 import SessionKit
+import TranscriptKit
 
 /// Turns a finished transcript (+ screenshots, notes) into a `MeetingSummary`, and proposes real names for
 /// diarized speakers when the conversation makes them clear.
@@ -76,8 +77,19 @@ struct Summarizer: Sendable {
         Duration: \(Timecode.format(transcript.duration))
         Speakers (id → current label): \(transcript.speakers.map { "\($0.id) → \($0.displayName)\($0.isMe ? " (the user)" : "")" }.joined(separator: ", "))
         """
-        let visibleNames = Array(Set(screenshots.flatMap(\.nameCandidates))).sorted()
-        if !visibleNames.isEmpty { header += "\nNames seen on screen during the meeting: \(visibleNames.prefix(30).joined(separator: ", "))" }
+        // Names seen on screen, most frequent first (participant tiles recur; OCR noise and app text rarely do).
+        var frequency: [String: Int] = [:]
+        for shot in screenshots { for name in Set(shot.nameCandidates) { frequency[name, default: 0] += 1 } }
+        let visibleNames = frequency.sorted { ($0.value, $1.key) > ($1.value, $0.key) }.map(\.key)
+        if !visibleNames.isEmpty {
+            header += "\nText that looks like names, seen on screen (most frequent first; may include app text/OCR noise): \(visibleNames.prefix(40).joined(separator: ", "))"
+        }
+        // Weak per-speaker hints: names visible notably more often while that speaker talks.
+        let observations = screenshots.map { SpeakerNameInference.Observation(offset: $0.offset, names: $0.nameCandidates) }
+        let hints = SpeakerNameInference.suggest(transcript: transcript, observations: observations, minimumLift: 2)
+        if !hints.isEmpty {
+            header += "\nWeak screen hints (use only if the conversation agrees): " + hints.map { "\($0.speakerID) often talks while “\($0.name)” is on screen" }.joined(separator: "; ")
+        }
         if !glossary.isEmpty { header += "\nGlossary (correct spellings): \(glossary.joined(separator: ", "))" }
         if !notes.isEmpty {
             header += "\nUser notes taken during the meeting:\n" + notes.map { "[\(Timecode.format($0.offset))] \($0.text)" }.joined(separator: "\n")
@@ -151,10 +163,11 @@ struct Summarizer: Sendable {
     - Action items: concrete task, owner exactly as named in the meeting (or null), due date only if stated.
     - "my_questions_and_commitments": questions the user (speaker id "me") raised and things they committed to.
     - Write in the language the meeting was held in.
-    - Speakers are labelled like "Speaker 2 (S2)". If the material makes a speaker's real name clear (they \
-    introduce themselves, are addressed by name right before replying, or the screenshots show it unambiguously), \
-    add it to "speaker_names" as {"S2": "Maria Silva"}. Omit speakers you are not sure about. Use real names in the \
-    rest of the summary once established.
+    - Speakers are labelled like "Speaker 2 (S2)". Name every speaker whose real name the material makes clear: \
+    they introduce themselves, someone addresses them by name and they answer, or a name seen on screen matches \
+    who is talking. Put them in "speaker_names" as {"S2": "Maria Silva"}, using the full name when it appears on \
+    screen. Never use product, company, place or UI text as a name. Omit speakers you are not sure about. Use real \
+    names in the rest of the summary once established.
     - Reply with ONE JSON object only, no prose and no code fences, with exactly these keys:
 
     \(MeetingSummary.jsonSchemaExample.dropLast(2))

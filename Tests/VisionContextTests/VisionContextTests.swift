@@ -48,7 +48,10 @@ private func image(verticalEdge: Bool) -> CGImage {
         let names = NameTagHeuristics.candidates(in: [
             line("Maria Silva"), line("John Park (Host)"), line("Mute"), line("Share Screen"),
             line("Q3 Roadmap 2026"), line("maria silva"), line("Participants (4)"),
+            // Seen in a real meeting recording: company names, UI labels, OCR noise.
+            line("L Brands"), line("Active"), line("ATHOM N"), line("AE AE-Shsves"), line("A Ali's Location"),
+            line("AR Organization"), line("Admin"), line("Ana de Souza"), line("John F. Kennedy"), line("Olga Nistreanu"),
         ])
-        #expect(names == ["Maria Silva", "John Park"])
+        #expect(names == ["Maria Silva", "John Park", "Ana de Souza", "John F. Kennedy", "Olga Nistreanu"])
     }
 }

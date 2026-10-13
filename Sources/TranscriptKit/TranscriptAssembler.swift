@@ -56,7 +56,8 @@ public enum TranscriptAssembler {
         let meSegments = group(routedMe.map { (Speaker.meID, $0) }, track: .me, options: options)
             .filter { !isEcho($0, of: themSegments, threshold: options.echoSimilarity) }
 
-        var speakers = [Speaker.me(named: input.meName)]
+        // Only speakers with lines are listed (an imported recording has no separate "me" track).
+        var speakers = meSegments.isEmpty ? [] : [Speaker.me(named: input.meName)]
         for (index, key) in keyOrder.enumerated() {
             guard let id = speakerIDForKey[key] else { continue }
             speakers.append(Speaker(id: id, displayName: "Speaker \(index + 1)"))

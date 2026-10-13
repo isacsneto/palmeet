@@ -39,6 +39,14 @@ struct MainView: View {
                     }
                     .help("Record a meeting (⌃⌥N)")
                 }
+                ToolbarItem {
+                    Button {
+                        app.presentImportPanel()
+                    } label: {
+                        Label("Import", systemImage: "square.and.arrow.down")
+                    }
+                    .help("Import a recording (video or audio) to transcribe and summarize")
+                }
             }
         } detail: {
             if !app.manager.settings.hasCompletedOnboarding {
@@ -111,6 +119,7 @@ private struct EmptyStateView: View {
         } actions: {
             Button("Record a meeting") { app.isPickerPresented = true }
                 .buttonStyle(.borderedProminent)
+            Button("Import a recording…") { app.presentImportPanel() }
             Text("Tip: ⌃⌥R records the meeting window in front.").font(.caption).foregroundStyle(.secondary)
         }
     }

@@ -112,6 +112,11 @@ enum NameTagHeuristics {
         "mute", "unmute", "share", "stop", "chat", "participants", "people", "leave", "end", "record",
         "recording", "reactions", "more", "camera", "video", "audio", "raise", "hand", "settings", "join",
         "meeting", "host", "presenting", "you", "apps", "view", "speaker", "gallery", "copilot", "whiteboard",
+        "active", "admin", "address", "advanced", "organization", "location", "locations", "members", "member",
+        "owner", "role", "roles", "status", "edit", "delete", "save", "cancel", "search", "home", "dashboard",
+        "details", "new", "add", "create", "open", "close", "file", "files", "design", "page", "team", "teams",
+        "calendar", "activity", "help", "account", "profile", "invite", "copy", "link", "screen", "window",
+        "brands", "inc", "llc", "ltd", "corp", "company", "app", "free", "pro", "plan", "today", "yesterday",
         "silenciar", "compartilhar", "sair", "participantes", "reunião", "gravando", "apresentando",
     ]
 
@@ -128,16 +133,28 @@ enum NameTagHeuristics {
         return result
     }
 
+    /// "Maria Silva", "John F. Park", "Ana de Souza": 2–4 words, proper case, real letters. Single words are too
+    /// ambiguous on screens full of UI labels (and OCR noise), so they're not offered as names.
     static func looksLikeName(_ text: String) -> Bool {
-        let words = text.split(separator: " ")
-        guard (1...4).contains(words.count), text.count <= 40 else { return false }
-        guard text.rangeOfCharacter(from: .decimalDigits) == nil else { return false }
-        for word in words {
-            guard let first = word.first, first.isUppercase, first.isLetter else { return false }
-            if uiWords.contains(word.lowercased()) { return false }
+        let words = text.split(separator: " ").map(String.init)
+        guard (2...4).contains(words.count), text.count <= 40 else { return false }
+        guard text.allSatisfy({ $0.isLetter || $0 == " " || $0 == "-" || $0 == "'" || $0 == "." }) else { return false }
+        let particles: Set<String> = ["da", "de", "do", "dos", "das", "van", "von", "der", "di", "e"]
+        var properWords = 0
+        for (index, word) in words.enumerated() {
+            let lower = word.lowercased()
+            if uiWords.contains(lower.trimmingCharacters(in: .punctuationCharacters)) { return false }
+            if particles.contains(lower), index > 0, index < words.count - 1 { continue }
+            let isInitial = word.count == 2 && word.hasSuffix(".") && index > 0 && index < words.count - 1
+            if isInitial { continue }
+            // Proper case: capital then lowercase ("Silva", "O'Brien"), not ALL CAPS OCR noise or single letters.
+            guard word.count >= 2, let first = word.first, first.isUppercase,
+                  word.dropFirst().contains(where: \.isLowercase),
+                  word.dropFirst().filter(\.isUppercase).count <= 1
+            else { return false }
+            properWords += 1
         }
-        // Single words must be reasonably long to avoid UI labels like "OK".
-        return words.count > 1 || text.count >= 3
+        return properWords >= 2
     }
 }
 

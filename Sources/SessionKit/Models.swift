@@ -28,6 +28,8 @@ public struct CaptureSourceDescriptor: Codable, Sendable, Hashable {
         case window
         case application
         case browserTab
+        /// An existing audio/video recording imported from disk.
+        case importedFile
     }
 
     public var kind: Kind

@@ -73,7 +73,7 @@ public final class SessionManager {
     public private(set) var settings: AppSettings
     public private(set) var activeSessions: [MeetingSession] = []
     /// Sessions finished during this app run plus those loaded from disk, newest first.
-    public private(set) var library: [MeetingSession] = []
+    public internal(set) var library: [MeetingSession] = []
     public private(set) var browserProfiles: [BrowserProfile] = []
     public private(set) var bridgePort: UInt16?
     public private(set) var lastUsedSessionID: SessionID?
@@ -116,7 +116,7 @@ public final class SessionManager {
     }
 
     /// Thread-safe snapshot of settings for background provider construction.
-    @ObservationIgnored private let settingsBox: SettingsBox
+    @ObservationIgnored let settingsBox: SettingsBox
 
     public func start() {
         do {

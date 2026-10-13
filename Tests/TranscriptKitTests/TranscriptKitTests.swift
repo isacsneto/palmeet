@@ -21,7 +21,7 @@ private func words(_ text: String, from start: TimeInterval, step: TimeInterval 
         #expect(transcript.segments.map(\.speakerID) == ["S1", "S2"])
         #expect(transcript.segments[0].text == "Hello everyone welcome")
         #expect(transcript.displayName(for: "S2") == "Speaker 2")
-        #expect(transcript.displayName(for: "me") == "Isac")
+        #expect(transcript.speaker("me") == nil, "no mic lines → the user isn't listed as a participant")
     }
 
     @Test func meWordsOnlyCountWhileRoutedHere() {

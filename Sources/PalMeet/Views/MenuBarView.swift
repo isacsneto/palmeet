@@ -36,6 +36,13 @@ struct MenuBarView: View {
             }
             .buttonStyle(.borderless)
 
+            Button {
+                app.presentImportPanel()
+            } label: {
+                Label("Import a recording…", systemImage: "square.and.arrow.down")
+            }
+            .buttonStyle(.borderless)
+
             HStack {
                 Button("Open PalMeet") { app.openMainWindow() }
                 Button("Copilot panel") { app.windows.toggleCopilotPanel() }

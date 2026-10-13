@@ -1,4 +1,5 @@
 import AppKit
+import UniformTypeIdentifiers
 import Observation
 import PalMeetCore
 import SessionKit
@@ -84,6 +85,29 @@ final class AppState {
                 } catch {
                     lastError = error.localizedDescription
                 }
+            }
+        }
+    }
+
+    /// File → Import: pick an audio/video recording and process it like a meeting.
+    func presentImportPanel() {
+        openMainWindow()
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = RecordingImporter.supportedTypes
+        panel.allowsMultipleSelection = true
+        panel.message = "Choose meeting recordings (video or audio) to transcribe and summarize"
+        guard panel.runModal() == .OK else { return }
+        for url in panel.urls { importRecording(url) }
+    }
+
+    func importRecording(_ url: URL) {
+        Task {
+            do {
+                let session = try await manager.importRecording(from: url)
+                selectedSessionID = session.id
+                await session.processImport()
+            } catch {
+                lastError = "Import failed: \(error.localizedDescription)"
             }
         }
     }

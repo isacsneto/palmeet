@@ -289,6 +289,17 @@ public final class MeetingSession: Identifiable {
         }
     }
 
+    /// Shown while an imported recording waits to be processed.
+    func markQueued() {
+        stage = .transcribing("Queued…")
+    }
+
+    /// Processes an imported recording (audio and screenshots already written to the folder).
+    public func processImport() async {
+        stage = .transcribing("Preparing…")
+        await process()
+    }
+
     /// Runs transcription + summary again from the saved audio (interrupted or failed sessions).
     public func reprocess() async {
         guard !stage.isCapturing else { return }
@@ -639,17 +650,13 @@ public final class MeetingSession: Identifiable {
             }
         }
 
-        var assembled = TranscriptAssembler.assemble(
+        let assembled = TranscriptAssembler.assemble(
             sessionID: id,
             input: .init(themWords: themWords, meWords: meWords, diarization: spans, micRouting: metadata.micRouting, meName: meName)
         )
 
-        // Names visible on screen while a speaker talks (speaker views / active-speaker tiles).
-        let observations = screenshots.map { SpeakerNameInference.Observation(offset: $0.offset, names: $0.nameCandidates) }
-        let excluded: Set<String> = [settings.profile.name, meName]
-        for suggestion in SpeakerNameInference.suggest(transcript: assembled, observations: observations, excluding: excluded, minimumLift: 2) {
-            assembled.renameSpeaker(suggestion.speakerID, to: suggestion.name, source: "screenshot")
-        }
+        // Speakers are named by the summarizer, which weighs what people say ("Thanks, Maria") together with names
+        // seen on screen. Screen text alone is too noisy to rename anyone (shared screens are full of text).
         return assembled
     }
 
