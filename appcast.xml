@@ -3,6 +3,21 @@
     <channel>
         <title>PalMeet</title>
         <item>
+            <title>0.1.2</title>
+            <pubDate>Tue, 13 Oct 2026 17:53:33 -0300</pubDate>
+            <sparkle:version>261013175327</sparkle:version>
+            <sparkle:shortVersionString>0.1.2</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<h2>PalMeet 0.1.2</h2><ul>
+<li>Fix: PalMeet could crash at launch because the update framework failed to load</li>
+<li>In-app updates (Settings → Updates, menu bar ↓ button)</li>
+<li>New app icon</li>
+</ul>
+]]></description>
+            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.1.2.zip" length="14701637" type="application/octet-stream" sparkle:edSignature="L6boLTMEmci7MGvB3uKIZfi/Au/IzaefVr+/80yFeWhfkNmxd//tO3xXMYuX7mgP82SsYI87zuyuO+PVnxjSCA=="/>
+        </item>
+        <item>
             <title>0.1.1</title>
             <pubDate>Tue, 13 Oct 2026 17:52:42 -0300</pubDate>
             <sparkle:version>2610131752</sparkle:version>
@@ -16,21 +31,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.1.1.zip" length="14701609" type="application/octet-stream" sparkle:edSignature="spdO4gipqb6ktzb03m2Bg5t3x2SISKfvnj1hreGEkCxxCilvYVgB594XXPO+H6aAch+L0IfIAK484wnnX2YAAg=="/>
-        </item>
-        <item>
-            <title>0.1.0</title>
-            <pubDate>Tue, 13 Oct 2026 17:50:55 -0300</pubDate>
-            <sparkle:version>2610131749</sparkle:version>
-            <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description><![CDATA[<h2>PalMeet 0.1.0</h2><ul>
-<li>First release: record meetings, speaker-attributed transcripts, Markdown summaries</li>
-<li>Multiple meetings at once, Chrome per-tab capture via the extension</li>
-<li>Live copilot, hotkeys, hidden from screen sharing, adjustable transparency</li>
-</ul>
-]]></description>
-            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.1.0.zip" length="14701723" type="application/octet-stream" sparkle:edSignature="kFEMMLzEkfhvvhT8y57bAUKB1+12Ngnjhjagu92QSPZcd6KOnCmfk0RsZ+dj4RWaVQeR8fCazrF81/NKcG1jAQ=="/>
         </item>
     </channel>
 </rss>
