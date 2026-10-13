@@ -3,7 +3,7 @@
 #
 #   scripts/build-app.sh [Release|Debug]
 #
-# Version: VERSION file (marketing version); build number: $PALMEET_BUILD_NUMBER or a yymmddHHMM timestamp
+# Version: VERSION file (marketing version); build number: $PALMEET_BUILD_NUMBER or a yymmddHHMMSS timestamp
 # (must only increase: Sparkle compares build numbers).
 # Signing: $PALMEET_SIGN_IDENTITY, else "PalMeet Development" if that identity exists (scripts/create-dev-cert.sh),
 # else ad-hoc. A stable identity keeps macOS privacy permissions and lets Sparkle accept updates.
@@ -13,7 +13,7 @@ CONFIG="${1:-Release}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 VERSION="$(tr -d '[:space:]' < VERSION)"
-BUILD="${PALMEET_BUILD_NUMBER:-$(date +%y%m%d%H%M)}"
+BUILD="${PALMEET_BUILD_NUMBER:-$(date +%y%m%d%H%M%S)}"
 DERIVED="$ROOT/build/DerivedData"
 APP="$ROOT/build/PalMeet.app"
 ENTITLEMENTS="$ROOT/Resources/PalMeet.entitlements"

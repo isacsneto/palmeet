@@ -5,6 +5,7 @@
 #
 # 1. Sets VERSION, builds and signs the Release app.
 # 2. Zips it into the `releases` branch (checked out at build/releases), keeping the 3 newest versions.
+#    To withdraw a bad version, delete its zip from build/releases and run the next release.
 # 3. Runs Sparkle's generate_appcast: EdDSA-signs each archive with the key in your Keychain (account
 #    "palmeet") and writes appcast.xml, the feed the app reads (Info.plist SUFeedURL).
 # 4. Commits + pushes the releases branch, tags the source (vX.Y.Z) and pushes the tag.
@@ -54,8 +55,10 @@ fi
 # Keep the three newest archives (Sparkle only needs the latest; older ones allow rollback).
 ls -t "$RELEASES"/PalMeet-*.zip | tail -n +4 | while read -r old; do rm -f "$old" "${old%.zip}.html"; done
 
+# Rebuild the feed from the archives present, so pruned (or withdrawn) versions disappear from it too.
+rm -f "$RELEASES/appcast.xml"
 "$SPARKLE_BIN/generate_appcast" --account palmeet --download-url-prefix "$REPO_RAW" \
-  --maximum-deltas 0 --embed-release-notes -o "$RELEASES/appcast.xml" "$RELEASES"
+  --maximum-deltas 0 --maximum-versions 3 --embed-release-notes -o "$RELEASES/appcast.xml" "$RELEASES"
 "$SPARKLE_BIN/sign_update" --account palmeet --verify "$ARCHIVE" \
   "$(sed -n 's/.*sparkle:edSignature="\([^"]*\)".*/\1/p' "$RELEASES/appcast.xml" | head -1)" >/dev/null && echo "Signature verified."
 
