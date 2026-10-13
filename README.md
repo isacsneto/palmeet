@@ -122,6 +122,7 @@ PALMEET_INTEGRATION=1 swift test --filter RealPipelineTests           # whole se
 PALMEET_CHROME="…/Google Chrome for Testing" swift test --filter ChromeExtensionE2ETests  # real Chrome + extension
 node --test Extension/chromium/tests/*.test.mjs                       # extension logic
 open build/PalMeet.app --args --self-test /tmp/palmeet-self-test.json  # taps, mic, screen capture, invisibility
+scripts/smoke-test.sh                                                  # app launches and stays idle (run before releasing)
 ```
 
 Note: if Chrome's own audio is muted (e.g. launched with `--mute-audio`), tab capture records silence; muting a meeting tab works the same way. Keep the meeting tab unmuted while recording.

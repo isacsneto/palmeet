@@ -44,6 +44,9 @@ echo "$VERSION" > VERSION
 git add VERSION
 git commit --quiet -m "Release $VERSION" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- VERSION || true
 "$ROOT/scripts/build-app.sh" Release
+if ! pgrep -x PalMeet >/dev/null; then
+  "$ROOT/scripts/smoke-test.sh" "$ROOT/build/PalMeet.app"   # never publish a build that hangs at launch
+fi
 
 ARCHIVE="$RELEASES/PalMeet-$VERSION.zip"
 rm -f "$ARCHIVE"
