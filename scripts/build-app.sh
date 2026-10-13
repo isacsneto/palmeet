@@ -52,6 +52,17 @@ fi
 for bundle in "$APP"/Contents/Resources/*.bundle; do
   [ -e "$bundle" ] && sign "$bundle"
 done
-sign --entitlements "$ENTITLEMENTS" "$APP"
+# Without an Apple Team ID (self-signed or ad-hoc), the hardened runtime's library validation would refuse to
+# load the embedded Sparkle.framework, so those builds opt out of it. Developer ID builds keep it on.
+SIGN_ENTITLEMENTS="$ENTITLEMENTS"
+case "$IDENTITY" in
+  "Developer ID Application"*|"Apple Development"*) ;;
+  *)
+    SIGN_ENTITLEMENTS="$ROOT/build/PalMeet.signing.entitlements"
+    cp "$ENTITLEMENTS" "$SIGN_ENTITLEMENTS"
+    /usr/libexec/PlistBuddy -c "Add :com.apple.security.cs.disable-library-validation bool true" "$SIGN_ENTITLEMENTS" 2>/dev/null || true
+    ;;
+esac
+sign --entitlements "$SIGN_ENTITLEMENTS" "$APP"
 codesign --verify --deep --strict "$APP"
 echo "Built $APP — PalMeet $VERSION ($BUILD), signed with: $IDENTITY"
