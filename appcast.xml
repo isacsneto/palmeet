@@ -3,6 +3,19 @@
     <channel>
         <title>PalMeet</title>
         <item>
+            <title>0.1.4</title>
+            <pubDate>Tue, 13 Oct 2026 18:10:20 -0300</pubDate>
+            <sparkle:version>261013181014</sparkle:version>
+            <sparkle:shortVersionString>0.1.4</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<h2>PalMeet 0.1.4</h2><ul>
+<li>Test of in-app updates (no functional changes since 0.1.3)</li>
+</ul>
+]]></description>
+            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.1.4.zip" length="14702981" type="application/octet-stream" sparkle:edSignature="PA/Y9D5p5qWWl1OT0iWdMCz84SyP3KPmW6xfCUta007IdD24x4aJpwaNXtGj/W0lAX2ZuV4uzGPlbcJF0K1NDA=="/>
+        </item>
+        <item>
             <title>0.1.3</title>
             <pubDate>Tue, 13 Oct 2026 18:05:37 -0300</pubDate>
             <sparkle:version>261013180519</sparkle:version>
