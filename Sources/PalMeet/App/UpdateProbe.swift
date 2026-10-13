@@ -47,6 +47,10 @@ final class UpdateProbe: NSObject, SPUUpdaterDelegate {
         NSApp.terminate(nil)
     }
 
+    nonisolated func feedURLString(for updater: SPUUpdater) -> String? {
+        UpdateController.freshFeedURL()
+    }
+
     nonisolated func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
         let version = item.displayVersionString, build = item.versionString
         MainActor.assumeIsolated { finish(["result": "updateAvailable", "availableVersion": version, "availableBuild": build]) }

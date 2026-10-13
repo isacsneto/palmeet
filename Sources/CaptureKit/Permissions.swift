@@ -26,7 +26,7 @@ public enum PermissionKind: String, CaseIterable, Sendable, Identifiable {
         case .screenRecording: "Lists meeting windows and takes screenshots for context."
         case .microphone: "Records your voice on its own track, so your lines are always attributed to you."
         case .systemAudio: "Records the meeting app's audio (the other participants) without a virtual audio driver."
-        case .accessibility: "Reads mute state from desktop meeting apps to route your mic to the right meeting."
+        case .accessibility: "Optional. Reads mute state from desktop Zoom/Teams to route your mic to the right meeting. If you already enabled PalMeet here but it shows as off, remove the old PalMeet entry in System Settings (−) and click Grant again."
         }
     }
 
@@ -61,7 +61,7 @@ public enum Permissions {
             @unknown default: return .unknown
             }
         case .systemAudio:
-            return .unknown
+            return SystemAudioPermission.state
         case .accessibility:
             return AXIsProcessTrusted() ? .granted : .notDetermined
         }
@@ -80,8 +80,11 @@ public enum Permissions {
                 openSettings(for: kind)
             }
         case .systemAudio:
-            // The prompt appears the first time a process tap is created; a short probe tap triggers it.
-            openSettings(for: kind)
+            if SystemAudioPermission.state == .notDetermined {
+                _ = await SystemAudioPermission.requestAccess()
+            } else {
+                openSettings(for: kind)
+            }
         case .accessibility:
             let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
             if !AXIsProcessTrustedWithOptions(options) { openSettings(for: kind) }

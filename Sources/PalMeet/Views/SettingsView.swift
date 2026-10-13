@@ -438,7 +438,7 @@ struct PermissionsView: View {
                             Text(kind.purpose).font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Button(state == .granted ? "Granted" : "Grant…") {
+                        Button(state == .granted ? "Granted" : (kind == .accessibility ? "Enable (optional)…" : "Grant…")) {
                             Task {
                                 await Permissions.request(kind)
                                 refresh()

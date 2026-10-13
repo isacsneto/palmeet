@@ -129,6 +129,16 @@ final class UpdateController: NSObject, SPUUpdaterDelegate {
 
     // MARK: - SPUUpdaterDelegate
 
+    /// GitHub's raw-file CDN caches each URL for ~5 minutes; a unique query string makes every check fresh.
+    nonisolated func feedURLString(for updater: SPUUpdater) -> String? {
+        UpdateController.freshFeedURL()
+    }
+
+    nonisolated static func freshFeedURL() -> String? {
+        guard let base = Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String, !base.isEmpty else { return nil }
+        return base + (base.contains("?") ? "&" : "?") + "t=\(Int(Date().timeIntervalSince1970))"
+    }
+
     nonisolated func updater(_ updater: SPUUpdater, didFinishUpdateCycleFor updateCheck: SPUUpdateCheck, error: (any Error)?) {
         let message = error.map { ($0 as NSError).localizedDescription }
         MainActor.assumeIsolated {

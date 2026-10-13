@@ -190,7 +190,7 @@ func zeroCrossingFrequency(_ samples: [Float], rate: Double) -> Double {
             _ = Permissions.state(of: kind)
             #expect(!kind.title.isEmpty && !kind.purpose.isEmpty)
         }
-        #expect(Permissions.state(of: .systemAudio) == .unknown)
+        #expect(Permissions.state(of: .systemAudio) != .unknown, "System Audio permission must be queryable via TCC")
     }
 
     @Test func coreAudioErrorShowsFourCC() {
