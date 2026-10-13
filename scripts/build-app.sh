@@ -18,14 +18,13 @@ DERIVED="$ROOT/build/DerivedData"
 APP="$ROOT/build/PalMeet.app"
 ENTITLEMENTS="$ROOT/Resources/PalMeet.entitlements"
 
-if [ ! -d App/PalMeet.xcodeproj ] || [ App/project.yml -nt App/PalMeet.xcodeproj/project.pbxproj ]; then
-  (cd App && xcodegen generate --spec project.yml >/dev/null)
-fi
+# Regenerate the project every time so new/removed source files are always picked up.
+(cd App && xcodegen generate --spec project.yml --quiet)
 
 echo "Building PalMeet ${VERSION} (${BUILD}), ${CONFIG}…"
 xcodebuild -project App/PalMeet.xcodeproj -scheme PalMeet -configuration "$CONFIG" \
   -derivedDataPath "$DERIVED" -destination 'platform=macOS,arch=arm64' \
-  MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" \
+  MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
   CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO \
   -quiet build
 

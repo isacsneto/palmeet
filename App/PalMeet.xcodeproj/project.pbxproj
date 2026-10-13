@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		01F9DF7213864EC45D57C760 /* PalMeetApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7646FBEED2ABFC23F8E06341 /* PalMeetApp.swift */; };
 		04BB7096599EF29F1D981472 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = C2E6033C9567DFA70C745F22 /* KeyboardShortcuts */; };
+		0858A674D39A3D5032CE060D /* UpdateProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4727A9AEC5808C1741D6393 /* UpdateProbe.swift */; };
 		0A6E2088D848AE505B1BBA5F /* Hotkeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4063FD7E1BF308ED5DDBCF6 /* Hotkeys.swift */; };
 		0D86EA0DA8C5E7078B4B58E5 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 63C0A191BACE16754898E237 /* Sparkle */; };
 		286D44F9E694C93ABBA98C43 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DB05B5BD895774DCB9E65AE /* MainView.swift */; };
@@ -54,6 +55,7 @@
 		D4063FD7E1BF308ED5DDBCF6 /* Hotkeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hotkeys.swift; sourceTree = "<group>"; };
 		D733A200CE44297517CDDC70 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		DC0E11840A3892A1D15B4910 /* CopilotPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopilotPanelView.swift; sourceTree = "<group>"; };
+		F4727A9AEC5808C1741D6393 /* UpdateProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateProbe.swift; sourceTree = "<group>"; };
 		F8A5B707C5950DC36E8C3DAE /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -120,6 +122,7 @@
 				7646FBEED2ABFC23F8E06341 /* PalMeetApp.swift */,
 				137C7B336A5B2B1626A90C7D /* SelfTest.swift */,
 				825CB764A7B0C4500E572404 /* UpdateController.swift */,
+				F4727A9AEC5808C1741D6393 /* UpdateProbe.swift */,
 				569FF35FBB69D037B7DC68E3 /* WindowController.swift */,
 			);
 			path = App;
@@ -269,6 +272,7 @@
 				F589921D1EA5131BEE534454 /* SettingsView.swift in Sources */,
 				CD066CAB2A31DBF832966A5A /* SourcePickerView.swift in Sources */,
 				74D5AEEE2ECA54E6F79D6956 /* UpdateController.swift in Sources */,
+				0858A674D39A3D5032CE060D /* UpdateProbe.swift in Sources */,
 				40F9E5FC212268ED9A79CCA3 /* WindowController.swift in Sources */,
 				6B6F12228E2888CF3D8B88C8 /* main.swift in Sources */,
 			);
