@@ -29,6 +29,7 @@
 		CD066CAB2A31DBF832966A5A /* SourcePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E7CA9E073531AE023DD5724 /* SourcePickerView.swift */; };
 		DC97AEA6BA6803DF7BA6E9A5 /* LiveSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 913791F15FABDC68A45FA1E1 /* LiveSessionView.swift */; };
 		E183C6DE790DF073B2CD88A8 /* InvisibilityCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6832CC72D241F4379256C4 /* InvisibilityCheck.swift */; };
+		E1863434B9E6AFA2B2DE2FE9 /* ChromeExtensionFolder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C837DB0A5DCFFFDD229E75F /* ChromeExtensionFolder.swift */; };
 		E2929363D8F88E20A68D1D0B /* ChromeExtension in Resources */ = {isa = PBXBuildFile; fileRef = 115F447D263A6034514ED0EA /* ChromeExtension */; };
 		F589921D1EA5131BEE534454 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D733A200CE44297517CDDC70 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
@@ -40,6 +41,7 @@
 		20A26A43269538D570C893B8 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		2BA6722C38F225EBB931ED4C /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		351442C0DB94327D04632A11 /* pal-meet-o */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "pal-meet-o"; path = ..; sourceTree = SOURCE_ROOT; };
+		3C837DB0A5DCFFFDD229E75F /* ChromeExtensionFolder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeExtensionFolder.swift; sourceTree = "<group>"; };
 		569FF35FBB69D037B7DC68E3 /* WindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowController.swift; sourceTree = "<group>"; };
 		5E7CA9E073531AE023DD5724 /* SourcePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourcePickerView.swift; sourceTree = "<group>"; };
 		7646FBEED2ABFC23F8E06341 /* PalMeetApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PalMeetApp.swift; sourceTree = "<group>"; };
@@ -117,6 +119,7 @@
 			isa = PBXGroup;
 			children = (
 				B57DA870617101CCEE1B0C81 /* AppState.swift */,
+				3C837DB0A5DCFFFDD229E75F /* ChromeExtensionFolder.swift */,
 				D4063FD7E1BF308ED5DDBCF6 /* Hotkeys.swift */,
 				CE6832CC72D241F4379256C4 /* InvisibilityCheck.swift */,
 				7646FBEED2ABFC23F8E06341 /* PalMeetApp.swift */,
@@ -258,6 +261,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				46DAFD4DD0C69C3C5910B330 /* AppState.swift in Sources */,
+				E1863434B9E6AFA2B2DE2FE9 /* ChromeExtensionFolder.swift in Sources */,
 				6F78B5618B44D9772EB54152 /* Components.swift in Sources */,
 				8BEF6FF1376686205E627834 /* CopilotPanelView.swift in Sources */,
 				0A6E2088D848AE505B1BBA5F /* Hotkeys.swift in Sources */,

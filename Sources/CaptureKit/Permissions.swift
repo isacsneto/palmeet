@@ -26,7 +26,7 @@ public enum PermissionKind: String, CaseIterable, Sendable, Identifiable {
         case .screenRecording: "Lists meeting windows and takes screenshots for context."
         case .microphone: "Records your voice on its own track, so your lines are always attributed to you."
         case .systemAudio: "Records the meeting app's audio (the other participants) without a virtual audio driver."
-        case .accessibility: "Optional. Reads mute state from desktop Zoom/Teams to route your mic to the right meeting. If you already enabled PalMeet here but it shows as off, remove the old PalMeet entry in System Settings (−) and click Grant again."
+        case .accessibility: "Optional. Reads mute state from desktop Zoom/Teams to route your mic to the right meeting. If it shows as off although PalMeet is enabled in System Settings, click Enable again: PalMeet clears entries left by older versions and asks macOS afresh."
         }
     }
 
@@ -86,9 +86,28 @@ public enum Permissions {
                 openSettings(for: kind)
             }
         case .accessibility:
+            if !AXIsProcessTrusted() {
+                // A switch that is "on" for an older build of PalMeet (different signature) never matches this
+                // one. Clear PalMeet's own entries so the prompt below creates a fresh one for this build.
+                await resetAccessibilityEntries()
+            }
             let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
             if !AXIsProcessTrustedWithOptions(options) { openSettings(for: kind) }
         }
+    }
+
+    /// `tccutil reset Accessibility <our bundle id>`: only touches PalMeet's own entries.
+    private static func resetAccessibilityEntries() async {
+        guard let bundleID = Bundle.main.bundleIdentifier else { return }
+        await Task.detached(priority: .userInitiated) {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
+            process.arguments = ["reset", "Accessibility", bundleID]
+            process.standardOutput = FileHandle.nullDevice
+            process.standardError = FileHandle.nullDevice
+            try? process.run()
+            process.waitUntilExit()
+        }.value
     }
 
     @MainActor
