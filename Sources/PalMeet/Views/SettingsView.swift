@@ -393,7 +393,17 @@ private struct BrowserExtensionSettings: View {
                 LabeledContent("2. Load the extension in each profile") {
                     Button("Show extension folder") { revealExtension() }
                 }
-                Text("In chrome://extensions turn on Developer mode → Load unpacked → pick the folder. Repeat in every profile you use for meetings. Then click the PalMeet icon in a meeting tab, or start from the PalMeet picker.")
+                HStack {
+                    Text(ChromeExtensionFolder.url.path(percentEncoded: false))
+                        .font(.caption.monospaced()).textSelection(.enabled).lineLimit(1).truncationMode(.middle)
+                    Button("Copy path") {
+                        ChromeExtensionFolder.refresh()
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(ChromeExtensionFolder.url.path(percentEncoded: false), forType: .string)
+                    }
+                    .controlSize(.small)
+                }
+                Text("In Chrome open chrome://extensions → turn on Developer mode → Load unpacked → choose that folder (in the file dialog press ⌘⇧G and paste the path). Repeat in every profile you use for meetings. After a PalMeet update, click ↻ Reload on the extension.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Status") {
@@ -414,10 +424,7 @@ private struct BrowserExtensionSettings: View {
     }
 
     private func revealExtension() {
-        let bundled = ["ChromeExtension", "chromium"].compactMap { Bundle.main.resourceURL?.appending(path: $0) }
-        let source = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appending(path: "../../../Extension/chromium").standardized
-        let url = (bundled + [source]).first { FileManager.default.fileExists(atPath: $0.appending(path: "manifest.json").path) }
-        if let url { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+        ChromeExtensionFolder.reveal()
     }
 }
 

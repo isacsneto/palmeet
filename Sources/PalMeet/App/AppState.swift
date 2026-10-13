@@ -27,6 +27,7 @@ final class AppState {
         Hotkeys.register(app: self)
         applyActivationPolicy()
         updates.start()
+        Task.detached(priority: .utility) { ChromeExtensionFolder.refresh() }
     }
 
     func applyActivationPolicy() {
