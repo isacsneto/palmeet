@@ -12,20 +12,43 @@ Native macOS app (Swift 6 / SwiftUI, macOS 15+) that records meetings from any a
 
 See [PLAN.md](PLAN.md) for the design.
 
-## Build and run
+## Install
 
 ```bash
-scripts/build-app.sh debug        # or: release
-open build/PalMeet.app
+scripts/install.sh --rebuild     # builds a signed Release, installs /Applications/PalMeet.app, registers the browser connector, launches it
 ```
 
-Requirements: Apple Silicon, macOS 15+, Xcode 26 / Swift 6.2.
+Or make a drag-to-install disk image with `scripts/make-dmg.sh`, which writes `build/PalMeet-<version>.dmg`.
 
-**Recommended: a stable signing identity.** Ad-hoc signed builds make macOS forget Screen Recording, Microphone and System Audio permissions after every rebuild. Create a local certificate once:
+Requirements: Apple Silicon, macOS 15+. Building also needs Xcode 26 and XcodeGen (`brew install xcodegen`).
+
+**Signing.** Run `scripts/create-dev-cert.sh` once. It creates a local "PalMeet Development" code-signing certificate, which the build scripts use automatically. A stable signature keeps macOS privacy permissions across updates and lets Sparkle accept updates.
+
+The app is not notarized, because that needs a paid Apple Developer ID. It runs fine on this Mac. To give it to someone else, they'd right-click → Open the first time. With a Developer ID, set `PALMEET_SIGN_IDENTITY="Developer ID Application: …"` and notarize.
+
+## Updates
+
+PalMeet updates itself with [Sparkle](https://sparkle-project.org). You can check from the menu bar (↓), from PalMeet → Check for Updates…, or in Settings → Updates. The Updates tab also has the automatic check and install toggles.
+
+- **Where updates live.** Each update is a signed `.zip` on the `releases` branch of the private repo `isacsneto/palmeet`, listed in `appcast.xml`. The app's feed is `SUFeedURL` in `Resources/Info.plist`.
+- **Private repo access.** The app authenticates with your GitHub CLI login (`gh auth token`, read at check time and never stored), or with a read-only token saved in Settings → Updates (Keychain). If the repo becomes public, no token is needed.
+- **Security.** Every archive is EdDSA-signed. The private key is in your login Keychain under the account `palmeet`; the public key is `SUPublicEDKey`. Sparkle refuses anything not signed with that key, and the new app must also carry the same code signature.
+  - **Back up the private key:** `.build/artifacts/sparkle/Sparkle/bin/generate_keys --account palmeet -x palmeet-sparkle-key.txt`. Store the file somewhere safe and offline. Without it you can't ship updates to installed copies.
+
+**Publishing a new version**
 
 ```bash
-scripts/create-dev-cert.sh
-PALMEET_SIGN_IDENTITY="PalMeet Development" scripts/build-app.sh debug
+git commit …                                    # commit your changes first
+scripts/release.sh 0.2.0 notes.md               # build, sign, update appcast.xml, push the releases branch, tag v0.2.0
+```
+
+`notes.md` holds one bullet per line and is shown in the update dialog. Installed apps pick the release up on their next daily check, or straight away with Check for Updates…. To withdraw a bad build, delete its zip from `build/releases` before the next release; the feed is regenerated from the archives that remain.
+
+## Development build
+
+```bash
+scripts/build-app.sh Release      # or Debug → build/PalMeet.app (Xcode project App/PalMeet.xcodeproj, generated from App/project.yml)
+swift scripts/make-icon.swift     # regenerate the app icon (Resources/Assets.xcassets, Resources/AppIcon.icns)
 ```
 
 ## First run
@@ -107,7 +130,7 @@ Note: if Chrome's own audio is muted (e.g. launched with `--mute-audio`), tab ca
 
 - **Echo cancellation can be unavailable.** On some Macs, macOS voice processing fails to start (`-10875`). The self-test reports this as "echo cancellation unavailable". PalMeet then records the plain microphone, and a transcript-level filter drops lines that duplicate the remote audio. With speakers instead of headphones, some echo may remain.
 
-- **Distribution.** Local builds resolve SwiftPM resource bundles from `.build`. A notarized, distributable build needs an Xcode project (or XcodeGen) so resource bundles land in `Contents/Resources`.
+- **Notarization.** Builds are signed with a local certificate, not a Developer ID, so Gatekeeper asks once on other Macs.
 - **Needs a real-meeting check on your Mac.** None of these can be verified without a live meeting:
   - process taps on Zoom, Teams and Chrome;
   - echo cancellation with speakers;
