@@ -1,0 +1,81 @@
+{
+  "manifest_version": 3,
+  "name": "PalMeet Bridge",
+  "short_name": "PalMeet",
+  "version": "0.1.0",
+  "description": "Streams the audio and video of one meeting tab per window to the PalMeet macOS app, isolated per tab and per profile.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2u48wteqq2LdytLL1cczbGk92Ek3kdIOUCXa/4vmeUmnpztr1Ndo9m9LVUFOoA+S529L4YVzg5hVUwGmv2IU7sgzRHu5xsqmoGYoHbBVhqvMgVD7rOpg4jLeIQfxsp3JLLVv+4YxrO2sBRJA4u1njbaqeYE/Fj8SaAbly+yoUO4P9Lgdr0pAcCOP1gecIaYtE6BREq0hwrPJ1Gpjj8JRra2VBztjsAICG4+pBam1978ySSu2b4W1sUGa7HMBvSrdaEbfIBjPBKZGuIKIdXNcN5LQrV96PtnxjEImx/6CVvfsOqGWvE4wAj9aKN01nSvzIBccanxDGT2d7kxeXdD0JQIDAQAB",
+  "minimum_chrome_version": "116",
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "PalMeet: click to record this tab",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "permissions": [
+    "tabCapture",
+    "offscreen",
+    "tabs",
+    "storage",
+    "nativeMessaging",
+    "alarms"
+  ],
+  "optional_permissions": [
+    "identity",
+    "identity.email"
+  ],
+  "host_permissions": [
+    "https://meet.google.com/*",
+    "https://teams.microsoft.com/*",
+    "https://teams.live.com/*",
+    "https://teams.cloud.microsoft/*",
+    "https://*.zoom.us/*",
+    "https://*.webex.com/*",
+    "https://whereby.com/*",
+    "https://*.whereby.com/*",
+    "https://app.slack.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://meet.google.com/*",
+        "https://teams.microsoft.com/*",
+        "https://teams.live.com/*",
+        "https://teams.cloud.microsoft/*",
+        "https://*.zoom.us/*",
+        "https://*.webex.com/*",
+        "https://whereby.com/*",
+        "https://*.whereby.com/*",
+        "https://app.slack.com/*"
+      ],
+      "js": ["content-meeting-state.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "start-capture": {
+      "suggested_key": {
+        "default": "Alt+Shift+R",
+        "mac": "Alt+Shift+R"
+      },
+      "description": "Start (or stop) PalMeet recording of the meeting tab in this window"
+    }
+  }
+}

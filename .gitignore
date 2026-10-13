@@ -1,0 +1,10 @@
+.build/
+.swiftpm/
+build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+.DS_Store
+.build-*/
+App/PalMeet.xcodeproj/xcuserdata/
+App/PalMeet.xcodeproj/project.xcworkspace/xcuserdata/
+*.dmg

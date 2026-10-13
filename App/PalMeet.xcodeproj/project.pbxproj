@@ -1,0 +1,510 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		01F9DF7213864EC45D57C760 /* PalMeetApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7646FBEED2ABFC23F8E06341 /* PalMeetApp.swift */; };
+		04BB7096599EF29F1D981472 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = C2E6033C9567DFA70C745F22 /* KeyboardShortcuts */; };
+		0A6E2088D848AE505B1BBA5F /* Hotkeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4063FD7E1BF308ED5DDBCF6 /* Hotkeys.swift */; };
+		0D86EA0DA8C5E7078B4B58E5 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 63C0A191BACE16754898E237 /* Sparkle */; };
+		286D44F9E694C93ABBA98C43 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DB05B5BD895774DCB9E65AE /* MainView.swift */; };
+		3E0819B1894AFFC8241B56B3 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9648B5D21AC3830D85F1B40C /* MenuBarView.swift */; };
+		40F9E5FC212268ED9A79CCA3 /* WindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 569FF35FBB69D037B7DC68E3 /* WindowController.swift */; };
+		46DAFD4DD0C69C3C5910B330 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B57DA870617101CCEE1B0C81 /* AppState.swift */; };
+		522B64ADBC5CA82453AAFEAF /* PalMeetKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4A3BAC9D96E59EF314206AE5 /* PalMeetKit */; };
+		6B6F12228E2888CF3D8B88C8 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF87AB2CA058C4DDBC94CE70 /* main.swift */; };
+		6D19FADF4D0691C905312ADA /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8A5B707C5950DC36E8C3DAE /* OnboardingView.swift */; };
+		6F78B5618B44D9772EB54152 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4BDB76F70025145BD8F754 /* Components.swift */; };
+		74D5AEEE2ECA54E6F79D6956 /* UpdateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 825CB764A7B0C4500E572404 /* UpdateController.swift */; };
+		77B0DBCF3996A10F29A03BBB /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 20A26A43269538D570C893B8 /* AppIcon.icns */; };
+		8BEF6FF1376686205E627834 /* CopilotPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC0E11840A3892A1D15B4910 /* CopilotPanelView.swift */; };
+		963621DC8CFF5737E15A664D /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BA6722C38F225EBB931ED4C /* ReviewView.swift */; };
+		ABDF115CBD9F7D15560E7712 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB5339211C502D87D1D203C1 /* Assets.xcassets */; };
+		AF5B1D69436A26D3CB121C2C /* SelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 137C7B336A5B2B1626A90C7D /* SelfTest.swift */; };
+		CD066CAB2A31DBF832966A5A /* SourcePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E7CA9E073531AE023DD5724 /* SourcePickerView.swift */; };
+		DC97AEA6BA6803DF7BA6E9A5 /* LiveSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 913791F15FABDC68A45FA1E1 /* LiveSessionView.swift */; };
+		E183C6DE790DF073B2CD88A8 /* InvisibilityCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6832CC72D241F4379256C4 /* InvisibilityCheck.swift */; };
+		E2929363D8F88E20A68D1D0B /* ChromeExtension in Resources */ = {isa = PBXBuildFile; fileRef = 115F447D263A6034514ED0EA /* ChromeExtension */; };
+		F589921D1EA5131BEE534454 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D733A200CE44297517CDDC70 /* SettingsView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0DB05B5BD895774DCB9E65AE /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
+		115F447D263A6034514ED0EA /* ChromeExtension */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ChromeExtension; path = ../Extension/chromium; sourceTree = SOURCE_ROOT; };
+		137C7B336A5B2B1626A90C7D /* SelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfTest.swift; sourceTree = "<group>"; };
+		20A26A43269538D570C893B8 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
+		2BA6722C38F225EBB931ED4C /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
+		351442C0DB94327D04632A11 /* pal-meet-o */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "pal-meet-o"; path = ..; sourceTree = SOURCE_ROOT; };
+		569FF35FBB69D037B7DC68E3 /* WindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowController.swift; sourceTree = "<group>"; };
+		5E7CA9E073531AE023DD5724 /* SourcePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourcePickerView.swift; sourceTree = "<group>"; };
+		7646FBEED2ABFC23F8E06341 /* PalMeetApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PalMeetApp.swift; sourceTree = "<group>"; };
+		825CB764A7B0C4500E572404 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
+		913791F15FABDC68A45FA1E1 /* LiveSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveSessionView.swift; sourceTree = "<group>"; };
+		9648B5D21AC3830D85F1B40C /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		9F4BDB76F70025145BD8F754 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		AB5339211C502D87D1D203C1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B57DA870617101CCEE1B0C81 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		CE6832CC72D241F4379256C4 /* InvisibilityCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvisibilityCheck.swift; sourceTree = "<group>"; };
+		CF87AB2CA058C4DDBC94CE70 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		D39E94174695A53047E9A623 /* PalMeet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PalMeet.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D4063FD7E1BF308ED5DDBCF6 /* Hotkeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hotkeys.swift; sourceTree = "<group>"; };
+		D733A200CE44297517CDDC70 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		DC0E11840A3892A1D15B4910 /* CopilotPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopilotPanelView.swift; sourceTree = "<group>"; };
+		F8A5B707C5950DC36E8C3DAE /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		183B163AEAC6589BED5CB07D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				522B64ADBC5CA82453AAFEAF /* PalMeetKit in Frameworks */,
+				04BB7096599EF29F1D981472 /* KeyboardShortcuts in Frameworks */,
+				0D86EA0DA8C5E7078B4B58E5 /* Sparkle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1699F4D4CEFFCE4FEC4D139C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D39E94174695A53047E9A623 /* PalMeet.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		2F910F985497551A2FF8F574 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				351442C0DB94327D04632A11 /* pal-meet-o */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		3F6586E9E2A3DA4F9ADA4D61 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				9F4BDB76F70025145BD8F754 /* Components.swift */,
+				DC0E11840A3892A1D15B4910 /* CopilotPanelView.swift */,
+				913791F15FABDC68A45FA1E1 /* LiveSessionView.swift */,
+				0DB05B5BD895774DCB9E65AE /* MainView.swift */,
+				9648B5D21AC3830D85F1B40C /* MenuBarView.swift */,
+				F8A5B707C5950DC36E8C3DAE /* OnboardingView.swift */,
+				2BA6722C38F225EBB931ED4C /* ReviewView.swift */,
+				D733A200CE44297517CDDC70 /* SettingsView.swift */,
+				5E7CA9E073531AE023DD5724 /* SourcePickerView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		7EA62AFC8911399B7732778A /* Extension */ = {
+			isa = PBXGroup;
+			children = (
+				115F447D263A6034514ED0EA /* ChromeExtension */,
+			);
+			path = Extension;
+			sourceTree = "<group>";
+		};
+		824E3307AB89E223F4BA2E89 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				B57DA870617101CCEE1B0C81 /* AppState.swift */,
+				D4063FD7E1BF308ED5DDBCF6 /* Hotkeys.swift */,
+				CE6832CC72D241F4379256C4 /* InvisibilityCheck.swift */,
+				7646FBEED2ABFC23F8E06341 /* PalMeetApp.swift */,
+				137C7B336A5B2B1626A90C7D /* SelfTest.swift */,
+				825CB764A7B0C4500E572404 /* UpdateController.swift */,
+				569FF35FBB69D037B7DC68E3 /* WindowController.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		83D3B9FA1A83F961A2C9B9B3 = {
+			isa = PBXGroup;
+			children = (
+				2F910F985497551A2FF8F574 /* Packages */,
+				95818B19B23CF5EA7AB15ED4 /* pal-meet-o */,
+				1699F4D4CEFFCE4FEC4D139C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		95818B19B23CF5EA7AB15ED4 /* pal-meet-o */ = {
+			isa = PBXGroup;
+			children = (
+				7EA62AFC8911399B7732778A /* Extension */,
+				DC191E4B00AD0EC9F5A75DD5 /* Resources */,
+				D48B8DF6519728A261C4AF7F /* Sources */,
+			);
+			name = "pal-meet-o";
+			path = ..;
+			sourceTree = "<group>";
+		};
+		C84EB8E3C18271327283849F /* PalMeet */ = {
+			isa = PBXGroup;
+			children = (
+				CF87AB2CA058C4DDBC94CE70 /* main.swift */,
+				824E3307AB89E223F4BA2E89 /* App */,
+				3F6586E9E2A3DA4F9ADA4D61 /* Views */,
+			);
+			path = PalMeet;
+			sourceTree = "<group>";
+		};
+		D48B8DF6519728A261C4AF7F /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				C84EB8E3C18271327283849F /* PalMeet */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		DC191E4B00AD0EC9F5A75DD5 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				20A26A43269538D570C893B8 /* AppIcon.icns */,
+				AB5339211C502D87D1D203C1 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3EB36A6310B725B645283311 /* PalMeet */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 221E33E978FC1B625EAA5908 /* Build configuration list for PBXNativeTarget "PalMeet" */;
+			buildPhases = (
+				7EDA2A43453021C800C89E5D /* Sources */,
+				B4860F81DFD6FC04D3619BF9 /* Resources */,
+				183B163AEAC6589BED5CB07D /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PalMeet;
+			packageProductDependencies = (
+				4A3BAC9D96E59EF314206AE5 /* PalMeetKit */,
+				C2E6033C9567DFA70C745F22 /* KeyboardShortcuts */,
+				63C0A191BACE16754898E237 /* Sparkle */,
+			);
+			productName = PalMeet;
+			productReference = D39E94174695A53047E9A623 /* PalMeet.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B18FA7D92ECA2D2FD81B23BD /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					3EB36A6310B725B645283311 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 2122F34BD9D8AB4E42505227 /* Build configuration list for PBXProject "PalMeet" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 83D3B9FA1A83F961A2C9B9B3;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FBB4E3E58A850EC489F40368 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+				F228090B0BC17E9EE776785A /* XCRemoteSwiftPackageReference "Sparkle" */,
+				51CE17FD3A2E796EC2340559 /* XCLocalSwiftPackageReference ".." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 1699F4D4CEFFCE4FEC4D139C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3EB36A6310B725B645283311 /* PalMeet */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B4860F81DFD6FC04D3619BF9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				77B0DBCF3996A10F29A03BBB /* AppIcon.icns in Resources */,
+				ABDF115CBD9F7D15560E7712 /* Assets.xcassets in Resources */,
+				E2929363D8F88E20A68D1D0B /* ChromeExtension in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7EDA2A43453021C800C89E5D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				46DAFD4DD0C69C3C5910B330 /* AppState.swift in Sources */,
+				6F78B5618B44D9772EB54152 /* Components.swift in Sources */,
+				8BEF6FF1376686205E627834 /* CopilotPanelView.swift in Sources */,
+				0A6E2088D848AE505B1BBA5F /* Hotkeys.swift in Sources */,
+				E183C6DE790DF073B2CD88A8 /* InvisibilityCheck.swift in Sources */,
+				DC97AEA6BA6803DF7BA6E9A5 /* LiveSessionView.swift in Sources */,
+				286D44F9E694C93ABBA98C43 /* MainView.swift in Sources */,
+				3E0819B1894AFFC8241B56B3 /* MenuBarView.swift in Sources */,
+				6D19FADF4D0691C905312ADA /* OnboardingView.swift in Sources */,
+				01F9DF7213864EC45D57C760 /* PalMeetApp.swift in Sources */,
+				963621DC8CFF5737E15A664D /* ReviewView.swift in Sources */,
+				AF5B1D69436A26D3CB121C2C /* SelfTest.swift in Sources */,
+				F589921D1EA5131BEE534454 /* SettingsView.swift in Sources */,
+				CD066CAB2A31DBF832966A5A /* SourcePickerView.swift in Sources */,
+				74D5AEEE2ECA54E6F79D6956 /* UpdateController.swift in Sources */,
+				40F9E5FC212268ED9A79CCA3 /* WindowController.swift in Sources */,
+				6B6F12228E2888CF3D8B88C8 /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0C3BE900F189FA44170029FC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		38077B140BCAEDDDFE14A04C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ../Resources/PalMeet.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ../Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.palmeet.PalMeet;
+				PRODUCT_NAME = PalMeet;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		D848DE46FA121079C75322E2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ../Resources/PalMeet.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ../Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.palmeet.PalMeet;
+				PRODUCT_NAME = PalMeet;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		E18A8B9ED30745A6BE134E23 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2122F34BD9D8AB4E42505227 /* Build configuration list for PBXProject "PalMeet" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C3BE900F189FA44170029FC /* Debug */,
+				E18A8B9ED30745A6BE134E23 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		221E33E978FC1B625EAA5908 /* Build configuration list for PBXNativeTarget "PalMeet" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				38077B140BCAEDDDFE14A04C /* Debug */,
+				D848DE46FA121079C75322E2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		51CE17FD3A2E796EC2340559 /* XCLocalSwiftPackageReference ".." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F228090B0BC17E9EE776785A /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.10.0;
+			};
+		};
+		FBB4E3E58A850EC489F40368 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/KeyboardShortcuts";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.4.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4A3BAC9D96E59EF314206AE5 /* PalMeetKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PalMeetKit;
+		};
+		63C0A191BACE16754898E237 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F228090B0BC17E9EE776785A /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+		C2E6033C9567DFA70C745F22 /* KeyboardShortcuts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FBB4E3E58A850EC489F40368 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;
+			productName = KeyboardShortcuts;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = B18FA7D92ECA2D2FD81B23BD /* Project object */;
+}

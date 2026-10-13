@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PalMeet Bridge</title>
+    <style>
+      :root { color-scheme: light dark; --muted: #6b6b6b; --ok: #188038; --bad: #c5221f; }
+      @media (prefers-color-scheme: dark) { :root { --muted: #a0a0a0; --ok: #81c995; --bad: #f28b82; } }
+      body { font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 640px; margin: 32px auto; padding: 0 16px; }
+      h1 { font-size: 20px; margin-bottom: 4px; }
+      .sub { color: var(--muted); margin-top: 0; }
+      section { margin: 24px 0; }
+      label { display: block; font-weight: 600; margin-bottom: 6px; }
+      input[type=text] { width: 100%; box-sizing: border-box; padding: 8px; font: inherit; }
+      .row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+      button { font: inherit; padding: 6px 12px; cursor: pointer; }
+      .status { font-weight: 600; }
+      .status.ok { color: var(--ok); }
+      .status.bad { color: var(--bad); }
+      code { font-size: 12px; word-break: break-all; }
+      .hint { color: var(--muted); font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <h1>PalMeet Bridge</h1>
+    <p class="sub">Streams one meeting tab per window to the PalMeet app on this Mac.</p>
+
+    <section>
+      <label>Connection</label>
+      <div id="status" class="status">Checking…</div>
+      <div id="statusDetail" class="hint"></div>
+      <div class="row"><button id="reconnect">Reconnect now</button></div>
+    </section>
+
+    <section>
+      <label for="label">Profile name shown in PalMeet</label>
+      <input id="label" type="text" placeholder="e.g. Work, Client X" maxlength="60" />
+      <div class="row">
+        <button id="save">Save</button>
+        <button id="useEmail">Use this profile's Google account email</button>
+      </div>
+      <div id="saved" class="hint"></div>
+    </section>
+
+    <section>
+      <label>How to record a meeting</label>
+      <p class="hint">
+        Pick the window in PalMeet, then click the PalMeet icon in that Chrome window when it shows
+        <b>REC?</b> (or press the shortcut, default <b>⌥⇧R</b>; change it at
+        <code>chrome://extensions/shortcuts</code>). Clicking the icon on a tab that is being recorded stops it.
+      </p>
+    </section>
+
+    <section>
+      <label>Details</label>
+      <div class="hint">Extension ID: <code id="extId"></code></div>
+      <div class="hint">Profile instance ID: <code id="profileId"></code></div>
+    </section>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

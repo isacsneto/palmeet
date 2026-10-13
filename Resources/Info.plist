@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>PalMeet</string>
+	<key>CFBundleExecutable</key>
+	<string>PalMeet</string>
+	<key>CFBundleIdentifier</key>
+	<string>app.palmeet.PalMeet</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>PalMeet</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>SUFeedURL</key>
+	<string>https://raw.githubusercontent.com/isacsneto/palmeet/releases/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>eyibpuQYmsZBzAkRWE8O1BHKUy/uEHNVo8zuMSIB7sk=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>15.0</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>PalMeet records your voice on its own track so your lines in the transcript are always attributed to you.</string>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>PalMeet records the audio of the meeting app you select (the other participants) to transcribe the meeting.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>PalMeet reads the title of the browser tab you record to label the meeting.</string>
+</dict>
+</plist>
