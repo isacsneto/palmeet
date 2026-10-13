@@ -3,6 +3,21 @@
     <channel>
         <title>PalMeet</title>
         <item>
+            <title>0.1.8</title>
+            <pubDate>Tue, 13 Oct 2026 18:47:34 -0300</pubDate>
+            <sparkle:version>261013184729</sparkle:version>
+            <sparkle:shortVersionString>0.1.8</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<h2>PalMeet 0.1.8</h2><ul>
+<li>New: Import a recording (video or audio): toolbar Import… or menu bar → Import a recording…</li>
+<li>Better speaker names: no more names taken from on-screen app text</li>
+<li>Fix: imported/recorded meetings no longer list you as a participant when you didn't speak</li>
+</ul>
+]]></description>
+            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.1.8.zip" length="14744369" type="application/octet-stream" sparkle:edSignature="g89x+iix05I6igUHR3osBAnAJ9AjLJPVitOlXoDI4Sjxr8vsUqe8KHXIpiFzAxCP4cXgfL90qXs0XANFa9ioCg=="/>
+        </item>
+        <item>
             <title>0.1.7</title>
             <pubDate>Tue, 13 Oct 2026 18:34:16 -0300</pubDate>
             <sparkle:version>261013183356</sparkle:version>
@@ -29,20 +44,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.1.6.zip" length="14709229" type="application/octet-stream" sparkle:edSignature="yqZ7hFYMO8XdM/99t0XC+65mo4nvBfxifdCK3N/NyMaQoNHdAppeyZ9ZI1emMiFMBr5oCtgA7DdC0/bHS/cvCw=="/>
-        </item>
-        <item>
-            <title>0.1.5</title>
-            <pubDate>Tue, 13 Oct 2026 18:13:28 -0300</pubDate>
-            <sparkle:version>261013181323</sparkle:version>
-            <sparkle:shortVersionString>0.1.5</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description><![CDATA[<h2>PalMeet 0.1.5</h2><ul>
-<li>Permissions screen shows System Audio Recording correctly</li>
-<li>Update checks always see the newest release</li>
-</ul>
-]]></description>
-            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.1.5.zip" length="14704113" type="application/octet-stream" sparkle:edSignature="F1JJIYn1uJEorzBX6O56nM+ilrbYedJ9VrQAHKxiyIqxalT1FjPyYSzUVjJfHFjJvSfJ7RkaKlmIY8M3A+/YCA=="/>
         </item>
     </channel>
 </rss>
