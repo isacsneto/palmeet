@@ -166,10 +166,15 @@ public final class SessionManager {
 
     // MARK: - Settings
 
+    /// Applies a change and persists it. A no-op when nothing changes: SwiftUI bindings may write back the
+    /// same value on every render, and re-publishing settings would re-render every view in a loop.
     public func updateSettings(_ mutate: (inout AppSettings) -> Void) {
-        mutate(&settings)
-        settingsStore.save(settings)
-        settingsBox.value = settings
+        var updated = settings
+        mutate(&updated)
+        guard updated != settings else { return }
+        settings = updated
+        settingsStore.save(updated)
+        settingsBox.value = updated
         activeSessions.forEach { $0.refreshCopilotConfiguration() }
     }
 

@@ -30,7 +30,11 @@ struct PalMeetApp: App {
     private var menuBarBinding: Binding<Bool> {
         Binding(
             get: { app.manager.settings.privacy.showMenuBarIcon },
-            set: { value in app.manager.updateSettings { $0.privacy.showMenuBarIcon = value } }
+            set: { value in
+                // MenuBarExtra writes this binding back on every render; only real changes count.
+                guard value != app.manager.settings.privacy.showMenuBarIcon else { return }
+                app.manager.updateSettings { $0.privacy.showMenuBarIcon = value }
+            }
         )
     }
 }

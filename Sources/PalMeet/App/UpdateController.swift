@@ -51,7 +51,10 @@ final class UpdateController: NSObject, SPUUpdaterDelegate {
         self.controller = controller
         // Sparkle reports on the main thread.
         observation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] updater, _ in
-            MainActor.assumeIsolated { self?.canCheckForUpdates = updater.canCheckForUpdates }
+            MainActor.assumeIsolated {
+                guard let self, self.canCheckForUpdates != updater.canCheckForUpdates else { return }
+                self.canCheckForUpdates = updater.canCheckForUpdates
+            }
         }
         Task {
             await refreshAccess()

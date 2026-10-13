@@ -195,6 +195,7 @@ final class WindowController {
     }
 
     func setHovering(_ role: AppWindowRole, _ isHovering: Bool) {
+        guard hovering.contains(role) != isHovering else { return }
         if isHovering { hovering.insert(role) } else { hovering.remove(role) }
         applyAll()
     }
@@ -257,11 +258,15 @@ final class WindowController {
 
     private func periodic() {
         guard let app else { return }
-        frontmostSessionID = app.manager.targetSession()?.id
+        // Assign observable state only on change, so idle ticks don't re-render views.
+        let front = app.manager.targetSession()?.id
+        if front != frontmostSessionID { frontmostSessionID = front }
         let presenting = app.manager.isPresentingAnywhere && settings.privacy.autoHideWhileSharing
-        let visible = visibleAppWindows()
-        let actions = hiding.presentingChanged(presenting, visible: Set(visible.map(ObjectIdentifier.init)))
-        if !actions.isEmpty { apply(actions, among: NSApp.windows) }
+        if presenting != hiding.isAutoHideActive {
+            let visible = visibleAppWindows()
+            let actions = hiding.presentingChanged(presenting, visible: Set(visible.map(ObjectIdentifier.init)))
+            if !actions.isEmpty { apply(actions, among: NSApp.windows) }
+        }
         if AppWindowRole.allCases.contains(where: { settings.appearance[$0].autoFade }) { applyAll() }
     }
 

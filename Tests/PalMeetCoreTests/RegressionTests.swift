@@ -2,6 +2,7 @@
 import BrowserBridge
 import Foundation
 import SessionKit
+import Observation
 import Testing
 @testable import PalMeetCore
 
@@ -170,5 +171,22 @@ struct ReviewRegressionTests {
         remote.push(Voice.alpha.samples(seconds: 1), at: 0.2)
         await h.manager.stop(session)
         #expect(words(in: session.transcript).contains("alpha"))
+    }
+}
+
+/// The menu bar hang: SwiftUI writing back an unchanged setting must not publish (and re-render) anything.
+@MainActor
+@Suite(.serialized) struct SettingsChurnTests {
+    @Test func unchangedSettingsDoNotNotifyObservers() {
+        let h = Harness()
+        defer { h.cleanup() }
+        let notifications = Counter()
+        withObservationTracking { _ = h.manager.settings } onChange: { notifications.increment() }
+        let current = h.manager.settings.privacy.showMenuBarIcon
+        for _ in 0..<100 { h.manager.updateSettings { $0.privacy.showMenuBarIcon = current } }
+        #expect(notifications.count == 0, "a no-op write re-published settings")
+        h.manager.updateSettings { $0.privacy.showMenuBarIcon = !current }
+        #expect(notifications.count == 1)
+        #expect(h.manager.settings.privacy.showMenuBarIcon == !current)
     }
 }
