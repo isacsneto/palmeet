@@ -1,7 +1,9 @@
 // PalMeet content script (meeting sites only). Polls the page every second for the
 // microphone mute state and whether the user is presenting, and reports changes to the
-// service worker. Values are `null` when they cannot be determined — selectors on these
-// sites change often and UIs are localized, so everything here is best effort.
+// service worker. While the tab is recorded it also reports live captions and "is speaking"
+// indicators (see speaker-detection.js) so PalMeet can tell who said what. Values are `null`
+// when they cannot be determined — selectors on these sites change often and UIs are localized,
+// so everything here is best effort.
 (() => {
   const POLL_MS = 1000;
   const HEARTBEAT_MS = 10_000;
@@ -133,4 +135,84 @@
 
   timer = setInterval(poll, POLL_MS);
   poll();
+
+  // ---- who is speaking (captions + speaking indicators) ------------------------------------------
+
+  const detection = globalThis.PalMeetSpeakerDetection;
+  if (!detection) return;
+  const SPEAKERS_POLL_MS = 400;
+  const STATUS_POLL_MS = 3000;
+  const DIAGNOSTICS_MS = 60_000;
+  const tracker = new detection.CaptionTracker(Math.random().toString(36).slice(2, 8));
+  let capturing = false;
+  let diagnosticsWanted = false;
+  let diagnostics = null;
+  let lastSpeaking = null;
+  let captionsSeen = 0;
+  let orphaned = false;
+
+  function sendToBackground(message) {
+    try {
+      return chrome.runtime.sendMessage({ source: 'content', ...message });
+    } catch {
+      orphaned = true;
+      return Promise.resolve(null);
+    }
+  }
+
+  async function refreshStatus() {
+    if (orphaned) return;
+    const status = await sendToBackground({ type: 'captureStatus' }).catch(() => null);
+    capturing = !!status?.capturing;
+    diagnosticsWanted = capturing && !!status?.diagnostics;
+    if (diagnosticsWanted && !diagnostics && document.body) {
+      diagnostics = new detection.PageDiagnostics(document);
+      diagnostics.start();
+    } else if (!diagnosticsWanted && diagnostics) {
+      diagnostics.stop();
+      diagnostics = null;
+    }
+  }
+
+  function pollSpeakers() {
+    if (orphaned || !capturing) return;
+    let captions = [];
+    let speaking = null;
+    try {
+      captions = tracker.update(detection.readCaptions(document, host));
+      speaking = detection.readSpeaking(document, host);
+    } catch {
+      return;
+    }
+    captionsSeen += captions.length;
+    const speakingChanged = JSON.stringify(speaking) !== JSON.stringify(lastSpeaking);
+    if (captions.length === 0 && !speakingChanged) return;
+    lastSpeaking = speaking;
+    sendToBackground({ type: 'speakerActivity', at: Date.now(), captions, speaking }).catch(() => {});
+  }
+
+  function reportDiagnostics() {
+    if (orphaned || !diagnostics) return;
+    let payload;
+    try {
+      payload = diagnostics.report(captionsSeen, lastSpeaking);
+    } catch {
+      return;
+    }
+    payload.host = host;
+    sendToBackground({ type: 'pageDiagnostics', at: Date.now(), payload }).catch(() => {});
+  }
+
+  const speakerTimers = [
+    setInterval(refreshStatus, STATUS_POLL_MS),
+    setInterval(pollSpeakers, SPEAKERS_POLL_MS),
+    setInterval(reportDiagnostics, DIAGNOSTICS_MS),
+  ];
+  const stopWhenOrphaned = setInterval(() => {
+    if (!orphaned) return;
+    for (const t of speakerTimers) clearInterval(t);
+    clearInterval(stopWhenOrphaned);
+    diagnostics?.stop();
+  }, 5000);
+  refreshStatus();
 })();

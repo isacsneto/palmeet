@@ -107,6 +107,11 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var glossary: [String] = []
     /// After a meeting, the summary provider proofreads the transcript for misheard words (names, jargon).
     public var aiTranscriptCorrection = true
+    /// Learn the voices of people you name and recognize them in later meetings (voiceprints stay on this Mac).
+    public var recognizeVoices = true
+    /// While a browser meeting is recorded, note which page elements change (helps PalMeet improve detecting
+    /// who is speaking on new meeting-site layouts). Saved only in the session folder.
+    public var meetingPageDiagnostics = true
     public var storageRoot: String?
     public var hasCompletedOnboarding = false
 
@@ -141,6 +146,8 @@ public struct AppSettings: Codable, Sendable, Equatable {
         appearance = (try? c.decodeIfPresent(AppearanceSettings.self, forKey: .appearance)) ?? d.appearance
         glossary = try c.decodeIfPresent([String].self, forKey: .glossary) ?? d.glossary
         aiTranscriptCorrection = try c.decodeIfPresent(Bool.self, forKey: .aiTranscriptCorrection) ?? d.aiTranscriptCorrection
+        recognizeVoices = try c.decodeIfPresent(Bool.self, forKey: .recognizeVoices) ?? d.recognizeVoices
+        meetingPageDiagnostics = try c.decodeIfPresent(Bool.self, forKey: .meetingPageDiagnostics) ?? d.meetingPageDiagnostics
         storageRoot = try c.decodeIfPresent(String.self, forKey: .storageRoot)
         hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? d.hasCompletedOnboarding
     }

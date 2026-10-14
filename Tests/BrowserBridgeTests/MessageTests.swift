@@ -103,7 +103,39 @@ struct MessageTests {
         let stop = String(decoding: try AppMessage.stopCapture(sessionID: id).encoded(), as: UTF8.self)
         #expect(stop == #"{"sessionId":"6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b","type":"stopCapture"}"#)
         let welcome = String(decoding: try AppMessage.welcome(protocolVersion: 1, profileInstanceId: "p").encoded(), as: UTF8.self)
-        #expect(welcome == #"{"profileInstanceId":"p","protocolVersion":1,"type":"welcome"}"#)
+        #expect(welcome == #"{"options":{"pageDiagnostics":false},"profileInstanceId":"p","protocolVersion":1,"type":"welcome"}"#)
+        let diagnostics = String(decoding: try AppMessage.welcome(protocolVersion: 1, profileInstanceId: "p", pageDiagnostics: true).encoded(), as: UTF8.self)
+        #expect(diagnostics.contains(#""options":{"pageDiagnostics":true}"#))
+    }
+
+    @Test func versionsCompareNumerically() throws {
+        #expect(isVersion("0.1.0", olderThan: "0.2.0"))
+        #expect(isVersion("0.9.1", olderThan: "0.10.0"))
+        #expect(isVersion("0.2", olderThan: "0.2.1"))
+        #expect(!isVersion("0.2.0", olderThan: "0.2.0"))
+        #expect(!isVersion("1.0.0", olderThan: "0.9.9"))
+        #expect(String(decoding: try AppMessage.reloadExtension.encoded(), as: UTF8.self) == #"{"type":"reloadExtension"}"#)
+    }
+
+    @Test func decodesSpeakerActivityAndDiagnostics() throws {
+        let id = UUID()
+        let json = #"{"type":"speakerActivity","sessionId":"\#(id.uuidString.lowercased())","at":1700000000123.5,"captions":[{"id":"x-1","name":"Maria Silva","text":"Good morning"},{"id":"x-2","name":null,"text":"hm"}],"speaking":["Maria Silva"]}"#
+        let message = try ExtensionMessage.decode(Data(json.utf8))
+        #expect(message == .speakerActivity(.init(
+            sessionId: id, at: 1700000000123.5,
+            captions: [.init(id: "x-1", name: "Maria Silva", text: "Good morning"), .init(id: "x-2", name: nil, text: "hm")],
+            speaking: ["Maria Silva"]
+        )))
+        let noIndicator = #"{"type":"speakerActivity","sessionId":"\#(id)","at":1,"captions":[],"speaking":null}"#
+        guard case .speakerActivity(let report) = try ExtensionMessage.decode(Data(noIndicator.utf8)) else { Issue.record("not decoded"); return }
+        #expect(report.speaking == nil)
+
+        let diag = #"{"type":"pageDiagnostics","sessionId":"\#(id)","at":5000,"payload":{"top":[{"sig":"div@class","count":3}],"mutations":3}}"#
+        guard case .pageDiagnostics(let session, let at, let payload) = try ExtensionMessage.decode(Data(diag.utf8)) else { Issue.record("not decoded"); return }
+        #expect(session == id && at == 5000)
+        let object = try #require(try JSONSerialization.jsonObject(with: payload) as? [String: Any])
+        #expect(object["mutations"] as? Int == 3)
+        #expect(throws: (any Error).self) { try ExtensionMessage.decode(Data(#"{"type":"pageDiagnostics","sessionId":"nope","payload":{}}"#.utf8)) }
     }
 
     @Test func originPolicy() {

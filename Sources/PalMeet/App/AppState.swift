@@ -23,12 +23,15 @@ final class AppState {
     private init() {}
 
     func bootstrap() {
+        // The extension folder is refreshed before the bridge starts, so an outdated extension that is asked to
+        // reload itself picks up this version's files.
+        ChromeExtensionFolder.refresh()
+        if let version = ChromeExtensionFolder.bundledVersion { manager.bridge.setLatestExtensionVersion(version) }
         manager.start()
         windows.attach(to: self)
         Hotkeys.register(app: self)
         applyActivationPolicy()
         updates.start()
-        Task.detached(priority: .utility) { ChromeExtensionFolder.refresh() }
     }
 
     func applyActivationPolicy() {

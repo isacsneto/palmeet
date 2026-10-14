@@ -196,6 +196,31 @@ struct ServerIntegrationTests {
         #expect(server.profiles().isEmpty)
     }
 
+    @Test func outdatedExtensionIsAskedToReloadOncePerRun() async throws {
+        let server = try makeServer()
+        defer { server.stop() }
+        server.setLatestExtensionVersion("0.2.0")
+        let port = try #require(server.port)
+        for attempt in 0..<2 {
+            let client = TestClient(port: port)
+            try await client.send(json: TestClient.hello(token: token, profile: "old"))  // reports 0.1.0
+            #expect(await client.receiveJSON()?["type"] as? String == "welcome")
+            let next = await client.receiveJSON(timeout: .seconds(1))
+            if attempt == 0 {
+                #expect(next?["type"] as? String == "reloadExtension")
+            } else {
+                #expect(next == nil, "a reload that didn't help isn't requested again")
+            }
+            client.close()
+        }
+        // Up-to-date extensions are left alone.
+        let current = TestClient(port: port)
+        defer { current.close() }
+        try await current.send(json: TestClient.hello(token: token, profile: "new").replacingOccurrences(of: "0.1.0", with: "0.2.0"))
+        #expect(await current.receiveJSON()?["type"] as? String == "welcome")
+        #expect(await current.receiveJSON(timeout: .seconds(1)) == nil)
+    }
+
     @Test func extensionOriginIsAccepted() async throws {
         let server = try makeServer()
         defer { server.stop() }

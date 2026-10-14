@@ -105,6 +105,10 @@ struct LiveSessionView: View {
                         }
                         Text(micStatus)
                             .font(.caption).foregroundStyle(.secondary)
+                        if let speakers = session.meetingSpeakerStatus {
+                            Label(speakers, systemImage: "captions.bubble")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }

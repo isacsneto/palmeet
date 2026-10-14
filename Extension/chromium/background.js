@@ -48,6 +48,9 @@ function captureForTab(tabId) {
   return null;
 }
 
+/** Set by the app (welcome.options): record which page elements change while the tab is captured. */
+let pageDiagnosticsEnabled = false;
+
 /** Last meeting-page state per tab, from the content script. */
 const meetingStateByTab = new Map();
 
@@ -227,6 +230,7 @@ async function onServerMessage(socket, message) {
     case 'welcome': {
       if (socket !== ws) return;
       authenticated = true;
+      pageDiagnosticsEnabled = message.options?.pageDiagnostics === true;
       backoffMs = 1000;
       clearInterval(pingTimer);
       pingTimer = setInterval(() => send({ type: 'ping' }), PING_INTERVAL_MS);
@@ -242,10 +246,24 @@ async function onServerMessage(socket, message) {
     case 'stopCapture':
       await stopCapture(message.sessionId, 'Stopped by PalMeet', true);
       break;
+    case 'reloadExtension':
+      // PalMeet was updated and this folder holds newer files: reload, but never in the middle of a recording.
+      reloadWhenIdle = true;
+      await reloadIfIdle();
+      break;
     case 'pong':
     default:
       break;
   }
+}
+
+let reloadWhenIdle = false;
+
+async function reloadIfIdle() {
+  if (!reloadWhenIdle) return;
+  const st = await state();
+  if (Object.keys(st.captures).length > 0 || Object.keys(st.pending).length > 0) return;
+  chrome.runtime.reload();
 }
 
 /** After a (re)connect, tell the app about captures and pending requests it may not know. */
@@ -457,6 +475,7 @@ async function stopCapture(sessionId, message, notifyApp) {
   if (notifyApp) sendCaptureState(sessionId, 'stopped', { message });
   await closeOffscreenIfIdle();
   refreshBadges();
+  await reloadIfIdle();
 }
 
 async function stopCapturesForTab(tabId, message) {
@@ -673,6 +692,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!prev || prev.muted !== next.muted || prev.presenting !== next.presenting) {
       state().then(() => forwardMeetingState(tabId));
     }
+    return false;
+  }
+  if (message?.source === 'content' && message.type === 'captureStatus' && sender.tab?.id !== undefined) {
+    state().then(() => sendResponse({ capturing: !!captureForTab(sender.tab.id), diagnostics: pageDiagnosticsEnabled }));
+    return true;
+  }
+  if (message?.source === 'content' && (message.type === 'speakerActivity' || message.type === 'pageDiagnostics') && sender.tab?.id !== undefined) {
+    const tabId = sender.tab.id;
+    state().then(() => {
+      const capture = captureForTab(tabId);
+      if (!capture) return;
+      if (message.type === 'speakerActivity') {
+        send({
+          type: 'speakerActivity',
+          sessionId: capture.sessionId,
+          at: Number(message.at) || Date.now(),
+          captions: Array.isArray(message.captions) ? message.captions.slice(0, 50) : [],
+          speaking: Array.isArray(message.speaking) ? message.speaking.slice(0, 20) : null,
+        });
+      } else if (pageDiagnosticsEnabled) {
+        send({ type: 'pageDiagnostics', sessionId: capture.sessionId, at: Number(message.at) || Date.now(), payload: message.payload ?? {} });
+      }
+    });
     return false;
   }
   if (message?.source === 'offscreen') {

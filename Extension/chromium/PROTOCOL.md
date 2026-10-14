@@ -123,6 +123,32 @@ From the content script on meeting pages (polled every 1 s, sent on change). `nu
 { "type": "meetingState", "sessionId": "…", "muted": true, "presenting": null }
 ```
 
+### `speakerActivity`
+From the content script while its tab is captured: live captions (labelled with the speaker's name by the
+meeting service) and "is speaking" indicators. Sent when something changes (polled every 400 ms).
+```jsonc
+{ "type": "speakerActivity", "sessionId": "…", "at": 1760436000123,   // Unix epoch ms of the page read
+  "captions": [{ "id": "k3x9-4", "name": "Maria Silva", "text": "Good morning everyone" }],
+  "speaking": ["Maria Silva"] }                                        // null: no indicator understood
+```
+- A caption keeps its `id` while on screen and is re-sent with its full text whenever the text changes
+  (captions grow word by word and get refined). `name` may be `null` (ignored by the app).
+- The app keeps them per session in `meeting-speakers.json` and, after the meeting, aligns caption text with
+  the transcribed words to name speakers (`SpeakerAttribution`).
+- Readers: Teams (`[data-tid="closed-caption-text"]` + `[data-tid="author"]`), Google Meet (the captions
+  region, any UI language), Zoom web; speaking indicators from "… speaking" labels. See `speaker-detection.js`.
+
+### `pageDiagnostics`
+Only when the app enabled it (`welcome.options.pageDiagnostics`) and only for captured tabs: once a minute,
+which page attributes changed most (with sample values and the nearest label), `data-tid` counts and live
+regions. The app appends it to `page-diagnostics.jsonl` in the session folder; it is used to add readers for
+new meeting-site layouts.
+```jsonc
+{ "type": "pageDiagnostics", "sessionId": "…", "at": 1760436000123,
+  "payload": { "mutations": 5210, "top": [{ "sig": "div[data-tid=\"voice-level-stream-outline\"]@class",
+               "count": 42, "values": ["…"], "labels": ["Maria Silva, …"] }], "dataTids": {}, "regions": [] } }
+```
+
 ### `ping`
 `{ "type": "ping" }`
 
@@ -130,9 +156,10 @@ From the content script on meeting pages (polled every 1 s, sent on change). `nu
 
 | Message | Fields |
 |---|---|
-| `welcome` | `protocolVersion`, `profileInstanceId` |
+| `welcome` | `protocolVersion`, `profileInstanceId`, `options: { pageDiagnostics }` |
 | `startCapture` | `sessionId`, `windowId`, `tabId` |
 | `stopCapture` | `sessionId` |
+| `reloadExtension` | – (sent once per app run to an extension older than the copy in its folder; it reloads when nothing is being recorded) |
 | `pong` | – |
 
 ### Capture flow and the user gesture

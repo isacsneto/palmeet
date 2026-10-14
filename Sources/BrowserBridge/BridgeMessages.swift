@@ -11,6 +11,9 @@ public enum ExtensionMessage: Sendable, Equatable {
     case windows([BrowserWindow])
     case captureState(CaptureStateReport)
     case meetingState(MeetingStateReport)
+    case speakerActivity(SpeakerActivityReport)
+    /// Raw diagnostics JSON (the `payload` object) about which page elements change during the meeting.
+    case pageDiagnostics(sessionId: UUID, at: Double, payload: Data)
     case ping
     /// A well-formed message with a `type` this version does not know (ignored).
     case unknown(type: String)
@@ -101,8 +104,39 @@ public enum ExtensionMessage: Sendable, Equatable {
         }
     }
 
+    /// Captions and "is speaking" indicators read from the meeting page.
+    public struct SpeakerActivityReport: Sendable, Equatable, Codable {
+        public struct Caption: Sendable, Equatable, Codable {
+            /// Stable per on-screen caption; re-sent with the full text whenever the text changes.
+            public var id: String
+            public var name: String?
+            public var text: String
+
+            public init(id: String, name: String?, text: String) {
+                self.id = id
+                self.name = name
+                self.text = text
+            }
+        }
+
+        public var sessionId: UUID
+        /// When the page was read, Unix epoch milliseconds.
+        public var at: Double
+        public var captions: [Caption]
+        /// Names shown as speaking right now; `nil` when the page has no indicator PalMeet understands.
+        public var speaking: [String]?
+
+        public init(sessionId: UUID, at: Double, captions: [Caption], speaking: [String]?) {
+            self.sessionId = sessionId
+            self.at = at
+            self.captions = captions
+            self.speaking = speaking
+        }
+    }
+
     public enum DecodingError: Error, Equatable {
         case missingType
+        case badPayload
     }
 
     private struct Envelope: Decodable { var type: String? }
@@ -119,25 +153,47 @@ public enum ExtensionMessage: Sendable, Equatable {
         case "windows": return .windows(try decoder.decode(WindowsPayload.self, from: data).windows)
         case "captureState": return .captureState(try decoder.decode(CaptureStateReport.self, from: data))
         case "meetingState": return .meetingState(try decoder.decode(MeetingStateReport.self, from: data))
+        case "speakerActivity": return .speakerActivity(try decoder.decode(SpeakerActivityReport.self, from: data))
+        case "pageDiagnostics":
+            guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let session = (object["sessionId"] as? String).flatMap(UUID.init(uuidString:)),
+                  let payload = object["payload"] as? [String: Any]
+            else { throw DecodingError.badPayload }
+            let at = (object["at"] as? Double) ?? Date().timeIntervalSince1970 * 1000
+            return .pageDiagnostics(sessionId: session, at: at, payload: try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys]))
         case "ping": return .ping
         default: return .unknown(type: type)
         }
     }
 }
 
+/// Compares dotted version strings numerically ("0.10.0" > "0.9.1").
+public func isVersion(_ a: String, olderThan b: String) -> Bool {
+    let x = a.split(separator: ".").map { Int($0) ?? 0 }, y = b.split(separator: ".").map { Int($0) ?? 0 }
+    for i in 0..<max(x.count, y.count) {
+        let l = i < x.count ? x[i] : 0, r = i < y.count ? y[i] : 0
+        if l != r { return l < r }
+    }
+    return false
+}
+
 // MARK: - App → extension
 
 /// JSON text messages sent by the app.
 public enum AppMessage: Sendable, Equatable {
-    case welcome(protocolVersion: Int, profileInstanceId: String)
+    case welcome(protocolVersion: Int, profileInstanceId: String, pageDiagnostics: Bool = false)
     case startCapture(sessionID: UUID, windowID: Int, tabID: Int)
     case stopCapture(sessionID: UUID)
+    /// The extension is older than the copy in its folder: reload from disk when nothing is being recorded.
+    case reloadExtension
     case pong
 
     private struct Welcome: Encodable {
+        struct Options: Encodable { var pageDiagnostics: Bool }
         let type = "welcome"
         var protocolVersion: Int
         var profileInstanceId: String
+        var options: Options
     }
 
     private struct StartCapture: Encodable {
@@ -153,6 +209,7 @@ public enum AppMessage: Sendable, Equatable {
     }
 
     private struct Pong: Encodable { let type = "pong" }
+    private struct ReloadExtension: Encodable { let type = "reloadExtension" }
 
     /// Session IDs go on the wire as lowercase RFC 4122 strings (what `crypto.randomUUID()` emits).
     static func wireString(_ id: UUID) -> String { id.uuidString.lowercased() }
@@ -161,12 +218,14 @@ public enum AppMessage: Sendable, Equatable {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         switch self {
-        case .welcome(let version, let profile):
-            return try encoder.encode(Welcome(protocolVersion: version, profileInstanceId: profile))
+        case .welcome(let version, let profile, let diagnostics):
+            return try encoder.encode(Welcome(protocolVersion: version, profileInstanceId: profile, options: .init(pageDiagnostics: diagnostics)))
         case .startCapture(let session, let window, let tab):
             return try encoder.encode(StartCapture(sessionId: Self.wireString(session), windowId: window, tabId: tab))
         case .stopCapture(let session):
             return try encoder.encode(StopCapture(sessionId: Self.wireString(session)))
+        case .reloadExtension:
+            return try encoder.encode(ReloadExtension())
         case .pong:
             return try encoder.encode(Pong())
         }

@@ -5,6 +5,7 @@ import KeyboardShortcuts
 import LLMKit
 import PalMeetCore
 import SwiftUI
+import TranscriptKit
 
 struct SettingsView: View {
     var body: some View {
@@ -36,6 +37,76 @@ private func setting<T>(_ app: AppState, _ keyPath: WritableKeyPath<AppSettings,
 }
 
 // MARK: - General
+
+/// Who said what: voices PalMeet learned, and meeting-page signals.
+private struct VoicesSection: View {
+    @Environment(AppState.self) private var app
+    @State private var voices: [VoiceProfile] = []
+    @State private var renaming: UUID?
+    @State private var draft = ""
+    @State private var confirmForget = false
+
+    var body: some View {
+        Section {
+            Toggle(isOn: setting(app, \.recognizeVoices)) {
+                Text("Recognize people by voice")
+                Text("When you name a speaker (or a meeting's captions do), PalMeet remembers their voice and names them in later meetings, including the Teams and Zoom apps. Voiceprints stay on this Mac.")
+            }
+            if app.manager.settings.recognizeVoices {
+                if voices.isEmpty {
+                    Text("No voices yet. Name speakers in a meeting's review and they'll appear here.")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    ForEach(voices) { voice in
+                        HStack {
+                            Image(systemName: "waveform").foregroundStyle(.secondary)
+                            if renaming == voice.id {
+                                TextField("Name", text: $draft).onSubmit { commitRename(voice.id) }
+                                Button("Save") { commitRename(voice.id) }
+                            } else {
+                                Text(voice.name)
+                                Spacer()
+                                Text(voice.meetingCount == 1 ? "1 meeting" : "\(voice.meetingCount) meetings")
+                                    .font(.caption).foregroundStyle(.secondary)
+                                Button("Rename") { draft = voice.name; renaming = voice.id }.buttonStyle(.borderless)
+                                Button(role: .destructive) {
+                                    app.manager.deleteVoice(voice.id)
+                                    reload()
+                                } label: { Image(systemName: "trash") }
+                                .buttonStyle(.borderless)
+                                .help("Forget this voice")
+                            }
+                        }
+                    }
+                    Button("Forget all voices…", role: .destructive) { confirmForget = true }
+                        .confirmationDialog("Forget every learned voice?", isPresented: $confirmForget) {
+                            Button("Forget all", role: .destructive) { app.manager.forgetAllVoices(); reload() }
+                        }
+                }
+            }
+            Toggle(isOn: setting(app, \.meetingPageDiagnostics)) {
+                Text("Help improve speaker detection in browser meetings")
+                Text("While a browser meeting is recorded, notes which page elements change (e.g. speaking indicators) in a file in the meeting's folder. Nothing is sent anywhere.")
+            }
+        } header: {
+            Text("Who said what")
+        } footer: {
+            Text("Exact names in browser meetings: turn on the meeting's live captions (CC). Teams, Meet and Zoom label captions with each speaker's name, and PalMeet uses them.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        .onAppear(perform: reload)
+    }
+
+    private func reload() {
+        voices = app.manager.voiceProfiles()
+    }
+
+    private func commitRename(_ id: UUID) {
+        app.manager.renameVoice(id, to: draft)
+        renaming = nil
+        reload()
+    }
+}
 
 private struct GeneralSettings: View {
     @Environment(AppState.self) private var app
@@ -71,6 +142,7 @@ private struct GeneralSettings: View {
                     app.manager.updateSettings { $0.glossary = values }
                 }
             }
+            VoicesSection()
             Section("Recording") {
                 Toggle("Include my microphone by default", isOn: setting(app, \.includeMicByDefault))
                 Picker("Mic routing with several meetings", selection: setting(app, \.micRouting)) {

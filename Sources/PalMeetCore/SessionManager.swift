@@ -98,6 +98,7 @@ public final class SessionManager {
             asr: ParakeetEngine(model: ParakeetEngine.Model(rawValue: settings.asrModel) ?? .ultra),
             diarizer: OfflineSpeakerDiarizer(),
             scheduler: ASRScheduler(),
+            voices: VoiceProfileStore(),
             makeProvider: { kind in
                 LLMProviderFactory.make(config: box.value.providerConfig(kind), secrets: secrets)
             }
@@ -119,6 +120,7 @@ public final class SessionManager {
     @ObservationIgnored let settingsBox: SettingsBox
 
     public func start() {
+        bridge.setPageDiagnostics(settings.meetingPageDiagnostics)
         do {
             try bridge.start()
             bridgePort = bridge.port
@@ -175,6 +177,7 @@ public final class SessionManager {
         settings = updated
         settingsStore.save(updated)
         settingsBox.value = updated
+        bridge.setPageDiagnostics(updated.meetingPageDiagnostics)
         activeSessions.forEach { $0.refreshCopilotConfiguration() }
     }
 
@@ -183,6 +186,27 @@ public final class SessionManager {
     }
 
     public var store: SessionStore { services.store }
+
+    // MARK: - Voices
+
+    /// People PalMeet recognizes by voice.
+    public func voiceProfiles() -> [VoiceProfile] {
+        services.voices.load().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    public func deleteVoice(_ id: UUID) {
+        try? services.voices.delete(id)
+    }
+
+    public func renameVoice(_ id: UUID, to name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        try? services.voices.rename(id, to: trimmed)
+    }
+
+    public func forgetAllVoices() {
+        try? services.voices.deleteAll()
+    }
 
     // MARK: - Sources
 
@@ -511,6 +535,14 @@ public final class SessionManager {
             session.knownMuted = muted
             session.isPresenting = presenting
             updateMicRouting()
+        case .speakerActivity(let report):
+            activeSessions.first { $0.id == report.sessionId }?.recordSpeakerActivity(
+                at: Date(timeIntervalSince1970: report.at / 1000),
+                captions: report.captions.map { ($0.id, $0.name, $0.text) },
+                speaking: report.speaking
+            )
+        case .pageDiagnostics(let sessionID, let at, let payload):
+            activeSessions.first { $0.id == sessionID }?.recordPageDiagnostics(payload, at: at)
         }
     }
 

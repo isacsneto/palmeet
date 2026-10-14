@@ -64,6 +64,11 @@ public final class BrowserBridgeServer: Sendable {
         /// Sessions the app stopped. If the extension was disconnected at the time, it re-announces them as
         /// `capturing` after reconnecting; they must be stopped again, never adopted as new captures.
         var stoppedByApp: [UUID] = []
+        var pageDiagnostics = false
+        /// Version of the extension files in the folder Chrome loads from.
+        var latestExtensionVersion: String?
+        /// Profiles already asked to reload this run (never ask twice: the folder may hold an old copy).
+        var askedToReload: Set<String> = []
 
         var profiles: [BrowserProfile] {
             connections.values.compactMap { $0.role == .control ? $0.profile : nil }
@@ -367,9 +372,28 @@ public final class BrowserBridgeServer: Sendable {
                     sessionID: report.sessionId, muted: report.muted, presenting: report.presenting
                 ))
             }
+        case .speakerActivity(let report):
+            if state.withLock({ $0.sessions[report.sessionId]?.profileID == profile.id }) {
+                eventSubscribers.yield(.speakerActivity(report))
+            }
+        case .pageDiagnostics(let sessionID, let at, let payload):
+            let allowed = state.withLock { $0.pageDiagnostics && $0.sessions[sessionID]?.profileID == profile.id }
+            if allowed {
+                eventSubscribers.yield(.pageDiagnostics(sessionID: sessionID, at: Date(timeIntervalSince1970: at / 1000), payload: payload))
+            }
         case .unknown:
             break
         }
+    }
+
+    /// Extensions older than this are asked (once per run) to reload themselves from their folder.
+    public func setLatestExtensionVersion(_ version: String?) {
+        state.withLock { $0.latestExtensionVersion = version }
+    }
+
+    /// Asks extensions that connect from now on to report page diagnostics while recording.
+    public func setPageDiagnostics(_ enabled: Bool) {
+        state.withLock { $0.pageDiagnostics = enabled }
     }
 
     private func authenticate(_ hello: ExtensionMessage.Hello, connection: BridgeConnection) {
@@ -401,7 +425,16 @@ public final class BrowserBridgeServer: Sendable {
             return (replaced, s.profiles)
         }
         replaced.forEach { $0.close(.replaced) }
-        connection.send(.welcome(protocolVersion: browserBridgeProtocolVersion, profileInstanceId: profile.id))
+        let (diagnostics, reload) = state.withLock { s -> (Bool, Bool) in
+            var reload = false
+            if hello.role == .control, let latest = s.latestExtensionVersion, isVersion(hello.extensionVersion, olderThan: latest),
+               s.askedToReload.insert(profile.id).inserted {
+                reload = true
+            }
+            return (s.pageDiagnostics, reload)
+        }
+        connection.send(.welcome(protocolVersion: browserBridgeProtocolVersion, profileInstanceId: profile.id, pageDiagnostics: diagnostics))
+        if reload { connection.send(.reloadExtension) }
         if hello.role == .control {
             eventSubscribers.yield(.profilesChanged(profiles))
         }

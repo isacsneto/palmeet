@@ -176,9 +176,9 @@ private struct SpeakerChips: View {
                             Circle().fill(SessionPalette.speakerColor(speaker.id)).frame(width: 8, height: 8)
                             Text(speaker.displayName)
                             if let source = speaker.nameSource, source != "user" {
-                                Image(systemName: source == "screenshot" ? "camera.viewfinder" : "sparkles")
+                                Image(systemName: Self.icon(for: source))
                                     .font(.caption2).foregroundStyle(.secondary)
-                                    .help("Name suggested from \(source); click to change")
+                                    .help(Self.explanation(for: source))
                             }
                         }
                         .padding(.horizontal, 8).padding(.vertical, 4)
@@ -200,5 +200,23 @@ private struct SpeakerChips: View {
     private func commit() {
         if let renaming, !draft.isEmpty { session.renameSpeaker(renaming, to: draft) }
         renaming = nil
+    }
+
+    static func icon(for source: String) -> String {
+        switch source {
+        case "meeting": "captions.bubble"
+        case "voice": "waveform"
+        case "screenshot": "camera.viewfinder"
+        default: "sparkles"
+        }
+    }
+
+    static func explanation(for source: String) -> String {
+        switch source {
+        case "meeting": "Named by the meeting itself (its live captions). Click to change."
+        case "voice": "Recognized by voice from an earlier meeting. Click to correct; PalMeet learns from it."
+        case "screenshot": "Name seen on screen. Click to change."
+        default: "Name suggested by AI from what was said. Click to change; naming someone teaches PalMeet their voice."
+        }
     }
 }

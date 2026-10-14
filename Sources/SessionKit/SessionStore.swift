@@ -4,6 +4,7 @@ import Foundation
 ///
 ///     2026-10-13 1500 – Weekly sync/
 ///       session.json  transcript.json  transcript.md  summary.json  summary.md  copilot.json  notes.json
+///       meeting-speakers.json (captions / speaking indicators)  speaker-voices.json (voiceprints)
 ///       audio/them.caf  audio/me.caf
 ///       screenshots/0001_00-00-30.jpg  screenshots/index.json
 public struct SessionFolder: Sendable, Hashable {
@@ -20,6 +21,12 @@ public struct SessionFolder: Sendable, Hashable {
     public var summaryMarkdownURL: URL { url.appending(path: "summary.md") }
     public var copilotURL: URL { url.appending(path: "copilot.json") }
     public var notesURL: URL { url.appending(path: "notes.json") }
+    /// Who the meeting app showed as talking (captions, speaking indicators).
+    public var meetingSpeakersURL: URL { url.appending(path: "meeting-speakers.json") }
+    /// Voiceprint of each remote speaker, used to learn voices when speakers are named.
+    public var speakerVoicesURL: URL { url.appending(path: "speaker-voices.json") }
+    /// Which meeting-page elements changed while recording (diagnostics for speaker detection).
+    public var pageDiagnosticsURL: URL { url.appending(path: "page-diagnostics.jsonl") }
     public var audioDirectory: URL { url.appending(path: "audio", directoryHint: .isDirectory) }
     public var screenshotsDirectory: URL { url.appending(path: "screenshots", directoryHint: .isDirectory) }
     public var screenshotIndexURL: URL { screenshotsDirectory.appending(path: "index.json") }

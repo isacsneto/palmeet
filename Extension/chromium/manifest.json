@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PalMeet Bridge",
   "short_name": "PalMeet",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Streams the audio and video of one meeting tab per window to the PalMeet macOS app, isolated per tab and per profile.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2u48wteqq2LdytLL1cczbGk92Ek3kdIOUCXa/4vmeUmnpztr1Ndo9m9LVUFOoA+S529L4YVzg5hVUwGmv2IU7sgzRHu5xsqmoGYoHbBVhqvMgVD7rOpg4jLeIQfxsp3JLLVv+4YxrO2sBRJA4u1njbaqeYE/Fj8SaAbly+yoUO4P9Lgdr0pAcCOP1gecIaYtE6BREq0hwrPJ1Gpjj8JRra2VBztjsAICG4+pBam1978ySSu2b4W1sUGa7HMBvSrdaEbfIBjPBKZGuIKIdXNcN5LQrV96PtnxjEImx/6CVvfsOqGWvE4wAj9aKN01nSvzIBccanxDGT2d7kxeXdD0JQIDAQAB",
   "minimum_chrome_version": "116",
@@ -65,7 +65,7 @@
         "https://*.whereby.com/*",
         "https://app.slack.com/*"
       ],
-      "js": ["content-meeting-state.js"],
+      "js": ["speaker-detection.js", "content-meeting-state.js"],
       "run_at": "document_idle"
     }
   ],

@@ -17,6 +17,8 @@ struct SessionServices: Sendable {
     let asr: any ASREngine
     let diarizer: any Diarizer
     let scheduler: ASRScheduler
+    /// The library of learned voices.
+    let voices: VoiceProfileStore
     let makeProvider: @Sendable (LLMProviderKind) -> any LLMProvider
     /// Asks for microphone access when it hasn't been decided yet; false when denied.
     var ensureMicrophoneAccess: @Sendable () async -> Bool = {
@@ -86,6 +88,9 @@ public final class MeetingSession: Identifiable {
     /// Mute is detected by polling (≈1 s), so you were already talking when it's noticed.
     static let unmuteLeadIn: TimeInterval = 1.5
     public var isPresenting: Bool?
+    /// Captions and speaking indicators reported by the meeting page (browser tabs with the extension).
+    public private(set) var speakerTimeline = MeetingSpeakerTimeline()
+    private var timelineSavedAt: Date?
     public var meetingMode: MeetingMode
     public var prepNotes: String = "" {
         didSet { Task { await copilotEngine?.update(configuration: copilotConfiguration()) } }
@@ -145,6 +150,7 @@ public final class MeetingSession: Identifiable {
         self.screenshots = services.store.loadScreenshots(in: folder)
         self.notes = services.store.loadNotes(in: folder)
         self.suggestions = (try? SessionStore.readJSON([Suggestion].self, from: folder.copilotURL)) ?? []
+        self.speakerTimeline = (try? SessionStore.readJSON(MeetingSpeakerTimeline.self, from: folder.meetingSpeakersURL)) ?? MeetingSpeakerTimeline()
         switch metadata.status {
         case .ready: stage = .ready
         case .failed: stage = .failed(metadata.lastError ?? "Unknown error")
@@ -288,6 +294,8 @@ public final class MeetingSession: Identifiable {
         meWriter?.finish()
         metadata.endedAt = Date()
         metadata.status = .processing
+        speakerTimeline.finish(at: clock.offset())
+        saveSpeakerTimeline()
         persistMetadata()
         persistSecondaryFiles()
         if processAfterwards {
@@ -312,6 +320,55 @@ public final class MeetingSession: Identifiable {
     public func reprocess() async {
         guard !stage.isCapturing else { return }
         await process()
+    }
+
+    // MARK: - Who is speaking (meeting page)
+
+    /// Captions / speaking indicators from the meeting page. Ignored while paused (that audio isn't recorded).
+    func recordSpeakerActivity(at date: Date, captions: [(id: String, name: String?, text: String)], speaking: [String]?) {
+        guard stage == .recording else { return }
+        // Page reads carry the browser's clock, like the tab's audio frames, so both land on the same timeline.
+        let offset = clock.offset(at: min(date, Date().addingTimeInterval(120)))
+        for caption in captions {
+            speakerTimeline.recordCaption(id: caption.id, name: caption.name, text: caption.text, at: offset)
+        }
+        speakerTimeline.recordSpeaking(speaking, at: offset)
+        if timelineSavedAt.map({ Date().timeIntervalSince($0) > 30 }) ?? true {
+            saveSpeakerTimeline()
+        }
+    }
+
+    private func saveSpeakerTimeline() {
+        guard !speakerTimeline.isEmpty else { return }
+        timelineSavedAt = Date()
+        try? SessionStore.writeJSON(speakerTimeline, to: folder.meetingSpeakersURL)
+    }
+
+    /// Diagnostics about the meeting page, appended to `page-diagnostics.jsonl` in the session folder.
+    func recordPageDiagnostics(_ payload: Data, at date: Date) {
+        guard stage.isCapturing, let json = String(data: payload, encoding: .utf8) else { return }
+        let line = #"{"offset":\#(Int(clock.offset(at: date))),"payload":\#(json)}"# + "\n"
+        let url = folder.pageDiagnosticsURL
+        if let handle = try? FileHandle(forWritingTo: url) {
+            defer { try? handle.close() }
+            _ = try? handle.seekToEnd()
+            try? handle.write(contentsOf: Data(line.utf8))
+        } else {
+            try? Data(line.utf8).write(to: url, options: .atomic)
+        }
+    }
+
+    /// For the live view: whether the meeting is telling PalMeet who is talking.
+    public var meetingSpeakerStatus: String? {
+        guard metadata.source.kind == .browserTab else { return nil }
+        let names = speakerTimeline.names
+        if !speakerTimeline.captions.isEmpty {
+            return "Names from the meeting's captions: \(names.prefix(4).joined(separator: ", "))\(names.count > 4 ? " +\(names.count - 4)" : "")"
+        }
+        if !names.isEmpty {
+            return "Speaking indicators seen for \(names.prefix(4).joined(separator: ", "))"
+        }
+        return elapsed > 60 ? "Turn on live captions in the meeting (CC) so PalMeet knows exactly who said what." : nil
     }
 
     // MARK: - Periodic work
@@ -653,25 +710,57 @@ public final class MeetingSession: Identifiable {
             meWords = try await scheduler.run(priority: 100) { try await asr.transcribe(fileURL: meURL, language: language).words }
         }
 
-        var spans: [DiarizedSpan] = []
+        var diarization = DiarizationOutput(spans: [])
         if !themWords.isEmpty {
             stage = .transcribing("Identifying speakers…")
             let diarizer = services.diarizer
             do {
-                spans = try await scheduler.run(priority: 100) { try await diarizer.diarize(fileURL: themURL) }
+                diarization = try await scheduler.run(priority: 100) { try await diarizer.diarizeWithVoiceprints(fileURL: themURL) }
             } catch {
                 warn("Speaker separation failed; remote speech is labelled as one speaker. (\(error.localizedDescription))")
             }
         }
 
-        let assembled = TranscriptAssembler.assemble(
+        // Who spoke: the meeting's own captions/speaking indicators first, then voices learned in earlier meetings,
+        // then the diarizer's clusters. Remaining speakers are named by the summarizer from what people say.
+        let knownVoices = settings.recognizeVoices ? services.voices.load() : []
+        let assembled = TranscriptAssembler.assembleDetailed(
             sessionID: id,
-            input: .init(themWords: themWords, meWords: meWords, diarization: spans, micRouting: metadata.micRouting, meName: meName)
+            input: .init(
+                themWords: themWords, meWords: meWords, diarization: diarization.spans, micRouting: metadata.micRouting,
+                meName: meName, timeline: speakerTimeline.isEmpty ? nil : speakerTimeline,
+                voiceprints: diarization.voiceprints, knownVoices: knownVoices
+            )
         )
+        if !assembled.voices.isEmpty {
+            try? SessionStore.writeJSON(assembled.voices, to: folder.speakerVoicesURL)
+        }
+        if settings.recognizeVoices {
+            for speakerID in assembled.learnableVoices.sorted() {
+                guard let voice = assembled.voices[speakerID], voice.seconds >= VoiceMatcher.Thresholds().minimumSeconds,
+                      let speaker = assembled.transcript.speaker(speakerID)
+                else { continue }
+                try? services.voices.learn(name: speaker.displayName, voice: voice, sessionID: id.uuidString)
+            }
+        }
+        let recognized = assembled.transcript.speakers.filter { $0.nameSource == "voice" }.map(\.displayName)
+        if !recognized.isEmpty {
+            logger.info("Recognized by voice: \(recognized.joined(separator: ", "), privacy: .private)")
+        }
+        return assembled.transcript
+    }
 
-        // Speakers are named by the summarizer, which weighs what people say ("Thanks, Maria") together with names
-        // seen on screen. Screen text alone is too noisy to rename anyone (shared screens are full of text).
-        return assembled
+    /// Voiceprints of this meeting's remote speakers.
+    private func speakerVoices() -> [String: SpeakerVoice] {
+        (try? SessionStore.readJSON([String: SpeakerVoice].self, from: folder.speakerVoicesURL)) ?? [:]
+    }
+
+    /// Naming a speaker teaches PalMeet their voice (when the speaker talked long enough to be recognizable).
+    private func learnVoice(of speakerID: String, as name: String) {
+        guard settings().recognizeVoices, !name.isEmpty, speakerID != Speaker.meID,
+              let voice = speakerVoices()[speakerID], voice.seconds >= VoiceMatcher.Thresholds().minimumSeconds
+        else { return }
+        try? services.voices.learn(name: name, voice: voice, sessionID: id.uuidString)
     }
 
     /// Generates (or regenerates) the summary with the given provider. Transcript edits and speaker renames made
@@ -710,7 +799,8 @@ public final class MeetingSession: Identifiable {
                 logger.info("Proofreading fixed \(applied, privacy: .public) of \(fixes.count, privacy: .public) proposed words")
             }
             // LLM-proposed names never override names the user set.
-            for (speakerID, name) in output.speakerNames where current.speaker(speakerID)?.nameSource != "user" {
+            // …nor names the meeting itself or a known voice gave.
+            for (speakerID, name) in output.speakerNames where !Self.authoritativeNameSources.contains(current.speaker(speakerID)?.nameSource ?? "") {
                 current.renameSpeaker(speakerID, to: name, source: "transcript")
             }
             var newSummary = output.summary
@@ -748,6 +838,9 @@ public final class MeetingSession: Identifiable {
         }
     }
 
+    /// Name sources the summarizer's guesses never override.
+    static let authoritativeNameSources: Set<String> = ["user", "meeting", "voice"]
+
     // MARK: - Review edits
 
     /// Renames a speaker everywhere, including the summary text ("Speaker 2" → "John Park").
@@ -756,6 +849,7 @@ public final class MeetingSession: Identifiable {
         let oldName = transcript.displayName(for: speakerID)
         transcript.renameSpeaker(speakerID, to: name)
         self.transcript = transcript
+        learnVoice(of: speakerID, as: name.trimmingCharacters(in: .whitespacesAndNewlines))
         if let summary, oldName != name, !oldName.isEmpty {
             self.summary = Self.replacingName(oldName, with: name, in: summary)
         }

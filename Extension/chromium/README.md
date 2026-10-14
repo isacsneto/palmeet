@@ -15,7 +15,8 @@ Brave, Arc, Vivaldi and Chromium.
 | `background.js` | Service worker: control socket, windows/tabs reports, capture flow, badges. |
 | `offscreen.html` / `offscreen.js` | `getUserMedia` on the tab stream, playback, media socket. |
 | `pcm-worklet.js` | AudioWorklet that turns Float32 blocks into ~100 ms Int16 chunks. |
-| `content-meeting-state.js` | Reads mute / presenting state on meeting pages. |
+| `content-meeting-state.js` | Reads mute / presenting state on meeting pages; while recording, reports captions and speaking indicators. |
+| `speaker-detection.js` | Caption and "is speaking" readers for Teams, Meet and Zoom, plus page diagnostics. Loaded before the content script. |
 | `meeting-patterns.js` | The meeting URL list. Edit this to add services. |
 | `options.html` / `options.js` | Profile name, connection status. |
 

@@ -118,6 +118,21 @@ struct FakeDiarizer: Diarizer {
     func diarize(fileURL: URL) async throws -> [DiarizedSpan] {
         voiceRuns(try readMono(fileURL)).map { DiarizedSpan(speakerKey: $0.voice.rawValue, start: $0.start, end: $0.end) }
     }
+
+    /// Each fake voice has its own voiceprint, so voices are recognized across meetings like real ones.
+    func diarizeWithVoiceprints(fileURL: URL) async throws -> DiarizationOutput {
+        let spans = try await diarize(fileURL: fileURL)
+        var prints: [String: [Float]] = [:]
+        for span in spans {
+            prints[span.speakerKey] = Voice(rawValue: span.speakerKey).map(Self.voiceprint)
+        }
+        return DiarizationOutput(spans: spans, voiceprints: prints)
+    }
+
+    static func voiceprint(_ voice: Voice) -> [Float] {
+        let index = Voice.allCases.firstIndex(of: voice)!
+        return (0..<16).map { $0 == index ? 1 : 0.05 }
+    }
 }
 
 func readMono(_ url: URL) throws -> [Float] {
@@ -320,6 +335,7 @@ struct Harness {
             asr: realASR ?? asr,
             diarizer: realDiarizer ?? FakeDiarizer(),
             scheduler: ASRScheduler(),
+            voices: VoiceProfileStore(url: root.appending(path: "Voices.json")),
             makeProvider: { _ in realProvider ?? llm },
             ensureMicrophoneAccess: { micAllowed }
         )

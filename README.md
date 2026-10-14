@@ -4,7 +4,7 @@ Native macOS app (Swift 6 / SwiftUI, macOS 15+) that records meetings from any a
 
 - Captures **their** audio (per app, or per tab via the extension) and **your** mic on separate tracks.
 - Takes **screenshots** periodically and when the screen changes.
-- Builds a **speaker-attributed transcript**, on device.
+- Builds a **speaker-attributed transcript**, on device. Speakers are named from the meeting's own live captions (browser meetings with the extension) and from **voices it learned** in earlier meetings.
 - Writes a **Markdown summary** with Claude, OpenAI/Codex, Gemini, Cursor or a local model, using an API key or your existing CLI login.
 - Can record **several meetings at once**, each fully isolated.
 - Has a **live copilot** that suggests what to say and ask. It is off unless you turn it on.
@@ -97,6 +97,21 @@ Each meeting is saved to `~/Documents/PalMeet/<date time> – <title>/`:
 | `audio/them.caf`, `audio/me.caf` | The two audio tracks (16 kHz) |
 | `screenshots/*.jpg`, `screenshots/index.json` | Screenshots with their OCR text |
 | `copilot.json`, `notes.json`, `session.json` | Copilot suggestions, your notes, session metadata |
+| `meeting-speakers.json` | Captions and "is speaking" indicators the meeting page showed (browser meetings) |
+| `speaker-voices.json` | Voiceprint of each remote speaker (used to learn voices when you name speakers) |
+| `page-diagnostics.jsonl` | Which meeting-page elements changed while recording (helps add speaker detection for new layouts) |
+
+Learned voices live in `~/Library/Application Support/PalMeet/Voices.json` (Settings → General → Who said what).
+
+## Who said what
+
+Remote speech is attributed in this order (`SpeakerAttribution`):
+
+1. **Meeting captions.** With the extension and the meeting's live captions on, Teams, Meet and Zoom label each caption with the speaker's name. Caption text is aligned to the transcribed words, and those words take that name. This splits people the diarizer lumped together and merges one person it split.
+2. **Voice clusters** from the diarizer, named by a majority of their caption-labelled words, by "is speaking" indicators, or by a voice learned earlier (cosine similarity ≥ 0.65 with a clear winner; on real recordings the same voice scores 0.92–0.96 and different people at most 0.44).
+3. Otherwise "Speaker N", which the summarizer may name from what people say. It never overrides names from you, the meeting or a known voice.
+
+Naming a speaker in Review, or the meeting naming them, teaches PalMeet their voice (when they spoke for at least 8 s).
 
 ## Project layout
 
@@ -120,7 +135,9 @@ PALMEET_INTEGRATION=1 swift test --filter RealAudioIntegrationTests   # real ASR
 PALMEET_INTEGRATION=1 swift test --filter LiveSummaryTests            # real summary via the Claude Code CLI
 PALMEET_INTEGRATION=1 swift test --filter RealPipelineTests           # whole sessions with real models (EN + PT)
 PALMEET_CHROME="…/Google Chrome for Testing" swift test --filter ChromeExtensionE2ETests  # real Chrome + extension
-node --test Extension/chromium/tests/*.test.mjs                       # extension logic
+node --test Extension/chromium/tests/*.test.mjs                       # extension logic (+ real DOM with PALMEET_CHROME)
+PALMEET_SESSION_DIRS="<copied session>:<other>" swift test --filter RealSessionTests  # voice learning on real recordings
+PALMEET_VOICE_FILE=<them.caf> swift test --filter VoiceCalibrationTests             # same-voice vs other-voice similarity
 open build/PalMeet.app --args --self-test /tmp/palmeet-self-test.json  # taps, mic, screen capture, invisibility
 scripts/smoke-test.sh                                                  # app launches and stays idle (run before releasing)
 ```
@@ -136,8 +153,8 @@ Note: if Chrome's own audio is muted (e.g. launched with `--mute-audio`), tab ca
   - process taps on Zoom, Teams and Chrome;
   - echo cancellation with speakers;
   - the Chrome extension in a real browser;
-  - the mute/presenting selectors;
+  - the mute/presenting selectors, and the caption / speaking-indicator readers on live Teams, Meet and Zoom pages (`page-diagnostics.jsonl` from a real meeting shows what to adjust);
   - invisibility in each meeting app's screen share (run Settings → Privacy → *Run invisibility check*).
 - **Not built yet:**
-  - from PLAN.md Phase 3–4: automatic meeting detection, calendar attendees, synced audio playback in review, an LLM transcript-cleanup pass, cloud ASR, voice memory for recurring participants, and the copilot's "Deep answer";
+  - from PLAN.md Phase 3–4: automatic meeting detection, calendar attendees, synced audio playback in review, cloud ASR and the copilot's "Deep answer";
   - PLAN.md also describes a separate floating recording HUD; the menu bar fills that role.

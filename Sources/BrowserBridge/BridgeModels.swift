@@ -182,6 +182,10 @@ public enum BrowserBridgeEvent: Sendable {
     case userInitiatedCapture(sessionID: UUID, profileID: String, windowID: Int, tabID: Int)
     /// Mute / presenting state scraped from the meeting page. `nil` = unknown.
     case meetingState(sessionID: UUID, muted: Bool?, presenting: Bool?)
+    /// Captions / speaking indicators from the meeting page (who is talking).
+    case speakerActivity(ExtensionMessage.SpeakerActivityReport)
+    /// Which page elements changed while recording (JSON), to improve speaker detection. Only when enabled.
+    case pageDiagnostics(sessionID: UUID, at: Date, payload: Data)
 }
 
 public enum BrowserBridgeError: Error, Equatable, Sendable, CustomStringConvertible {
