@@ -3,6 +3,21 @@
     <channel>
         <title>PalMeet</title>
         <item>
+            <title>0.1.9</title>
+            <pubDate>Wed, 14 Oct 2026 10:52:49 -0300</pubDate>
+            <sparkle:version>261014105242</sparkle:version>
+            <sparkle:shortVersionString>0.1.9</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<h2>PalMeet 0.1.9</h2><ul>
+<li>**Mute is respected.** With a single meeting, what you say while you're muted in the meeting no longer ends up in the transcript or the saved audio (needs the PalMeet extension for browser meetings, or Accessibility for desktop Zoom/Teams). ⌃⌥M now turns your mic off/on for the meeting.</li>
+<li>**Browser windows warn you.** Recording a Chrome window captures every tab in every profile; the picker now says so and shows which Chrome profiles have the extension, with a guided "Set up…" per profile (Settings → Browser Extension).</li>
+<li>**Better transcripts.** After the meeting, your AI provider fixes misheard words (names, product terms) using the meeting's context. Corrected lines show a small wand icon; right-click → Restore original. Toggle in Settings → General.</li>
+</ul>
+]]></description>
+            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.1.9.zip" length="14804356" type="application/octet-stream" sparkle:edSignature="H3L9gLvsKXLtSsffw7/NK/0VpemjhEGi4MXkPZtE98jChdxLq6fDJAZZLzby4OtFcZE1TJnHRMsjY7jxUgFhBQ=="/>
+        </item>
+        <item>
             <title>0.1.8</title>
             <pubDate>Tue, 13 Oct 2026 18:47:34 -0300</pubDate>
             <sparkle:version>261013184729</sparkle:version>
@@ -29,21 +44,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.1.7.zip" length="14710889" type="application/octet-stream" sparkle:edSignature="6jHawUxOBdTfDEi4Ptf5E/pVXLKA5r5nL8CLPaleaCrH4QtKewcOYf+q9vEehDrSJ17knTCafbbxeEDfmhP0BA=="/>
-        </item>
-        <item>
-            <title>0.1.6</title>
-            <pubDate>Tue, 13 Oct 2026 18:17:02 -0300</pubDate>
-            <sparkle:version>261013181650</sparkle:version>
-            <sparkle:shortVersionString>0.1.6</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description><![CDATA[<h2>PalMeet 0.1.6</h2><ul>
-<li>Fix: Show extension folder now opens the Chrome extension folder in Finder</li>
-<li>The extension lives in a stable folder that survives app updates</li>
-<li>Permissions screen shows System Audio Recording correctly</li>
-</ul>
-]]></description>
-            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.1.6.zip" length="14709229" type="application/octet-stream" sparkle:edSignature="yqZ7hFYMO8XdM/99t0XC+65mo4nvBfxifdCK3N/NyMaQoNHdAppeyZ9ZI1emMiFMBr5oCtgA7DdC0/bHS/cvCw=="/>
         </item>
     </channel>
 </rss>
