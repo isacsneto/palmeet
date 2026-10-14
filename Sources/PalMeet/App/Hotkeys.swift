@@ -49,7 +49,7 @@ enum HotkeyCatalog {
             Entry(name: .quickNote, title: "Quick note"),
         ]),
         ("Mic", [
-            Entry(name: .cycleMic, title: "Cycle mic routing"),
+            Entry(name: .cycleMic, title: "My mic on/off (cycles between meetings when several)"),
         ]),
         ("Copilot", [
             Entry(name: .toggleCopilot, title: "Copilot on / off"),

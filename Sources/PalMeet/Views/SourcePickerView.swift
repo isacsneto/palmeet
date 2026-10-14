@@ -49,6 +49,10 @@ struct SourcePickerView: View {
                 if loading { ProgressView() }
             }
 
+            if selection.contains(where: isBrowserWindow) {
+                browserWindowWarning
+            }
+
             Divider()
 
             HStack {
@@ -86,6 +90,25 @@ struct SourcePickerView: View {
             return nil
         })
         return windows.filter { !tabWindowIDs.contains($0.id) }.map(SourceChoice.window)
+    }
+
+    private func isBrowserWindow(_ choice: SourceChoice) -> Bool {
+        if case .window(let window) = choice { return window.isBrowser }
+        return false
+    }
+
+    /// Recording a browser window captures the whole browser (all tabs, all profiles) and can't see the mute button.
+    private var browserWindowWarning: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("This records every tab in every profile of the browser, and PalMeet can't tell when you're muted.", systemImage: "exclamationmark.triangle.fill")
+                .font(.callout.weight(.medium))
+                .foregroundStyle(.orange)
+            Text("Add the PalMeet extension to the profile your meeting is in. The meeting tab then appears above and only its audio is recorded. Or press ⌃⌥M while you're muted.")
+                .font(.caption).foregroundStyle(.secondary)
+            ScrollView { ExtensionProfilesView(compact: true) }.frame(maxHeight: 120)
+        }
+        .padding(10)
+        .background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
     }
 
     private func isMeeting(_ choice: SourceChoice) -> Bool {
@@ -200,7 +223,7 @@ struct ExtensionStatusView: View {
         GroupBox {
             VStack(alignment: .leading, spacing: 6) {
                 if app.manager.browserProfiles.isEmpty {
-                    Text("Recording two meetings in the same browser (e.g. two Chrome profiles)? Install the PalMeet extension in each profile so every meeting tab's audio stays separate. Settings → Browser Extension.")
+                    Text("Meeting in a browser? Install the PalMeet extension in that profile: PalMeet then records only the meeting tab (not other tabs or profiles) and knows when you're muted. Settings → Browser Extension.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
@@ -231,5 +254,59 @@ struct PermissionHint: View {
         }
         .padding(10)
         .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+/// Browser profiles on this Mac and whether each has the PalMeet extension, with a guided setup per profile.
+/// Rescans every few seconds while visible, so a profile flips to ready right after "Load unpacked".
+struct ExtensionProfilesView: View {
+    @State private var profiles: [BrowserProfileInstall] = []
+    @State private var failed: String?
+    var compact = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if profiles.isEmpty {
+                Text("No Chrome, Edge or Brave profiles found.").font(.caption).foregroundStyle(.secondary)
+            }
+            ForEach(compact ? Array(profiles.prefix(6)) : profiles) { profile in
+                HStack(spacing: 8) {
+                    Image(systemName: symbol(profile)).foregroundStyle(color(profile))
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(profile.displayName).font(.callout).lineLimit(1).truncationMode(.middle)
+                        Text("\(profile.browser) · \(status(profile))").font(.caption2).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if !profile.extensionInstalled || !profile.extensionEnabled {
+                        Button(profile.extensionInstalled ? "Turn on…" : "Set up…") {
+                            failed = ExtensionSetup.open(profile) ? nil : "Couldn't open \(profile.browser)."
+                        }
+                        .controlSize(.small)
+                        .help("Opens this profile in \(profile.browser) with step-by-step instructions")
+                    }
+                }
+            }
+            if let failed { Text(failed).font(.caption).foregroundStyle(.red) }
+        }
+        .task {
+            while !Task.isCancelled {
+                let scanned = await Task.detached(priority: .utility) { InstalledBrowserProfiles.scan() }.value
+                if scanned != profiles { profiles = scanned }
+                try? await Task.sleep(for: .seconds(3))
+            }
+        }
+    }
+
+    private func status(_ profile: BrowserProfileInstall) -> String {
+        if !profile.extensionInstalled { return "extension not installed" }
+        return profile.extensionEnabled ? "extension installed" : "extension turned off"
+    }
+
+    private func symbol(_ profile: BrowserProfileInstall) -> String {
+        profile.extensionInstalled && profile.extensionEnabled ? "checkmark.circle.fill" : "puzzlepiece.extension"
+    }
+
+    private func color(_ profile: BrowserProfileInstall) -> Color {
+        profile.extensionInstalled && profile.extensionEnabled ? .green : .orange
     }
 }

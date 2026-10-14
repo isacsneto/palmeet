@@ -246,7 +246,9 @@ public final class SessionManager {
                 if family.overlaps(other) { return .shared(conflictsWith: session.title) }
             }
             if window.isBrowser {
-                return .isolated("\(window.appName) audio (all tabs). For per-tab capture, use the extension.")
+                // A browser plays every tab of every profile through one audio process, and its page contents
+                // (the mute button) aren't visible to PalMeet without the extension.
+                return .needsExtension("Records ALL \(window.appName) audio: every tab in every profile (videos, other calls), and can't see when you're muted. Add the PalMeet extension to this profile to record just the meeting tab.")
             }
             return .isolated("\(window.appName) audio only")
         }
@@ -387,14 +389,15 @@ public final class SessionManager {
 
     // MARK: - Mic routing
 
-    /// Decides which sessions hear your mic. One session: always. Several: manual overrides win, then sessions
-    /// known to be unmuted, then the only meeting app using the mic, then the frontmost meeting window.
+    /// Decides which sessions hear your mic. One session: yes unless you're muted in that meeting. Several: manual
+    /// overrides win, then sessions known to be unmuted, then the only meeting app using the mic, then the frontmost
+    /// meeting window. What you say while muted never reaches the transcript (live or final) or the kept audio.
     func updateMicRouting() {
         let candidates = activeSessions.filter { $0.metadata.includesMicrophone && $0.stage.isCapturing }
         guard !candidates.isEmpty else { return }
         if candidates.count == 1 {
             let session = candidates[0]
-            session.setMicRouted(session.micOverride ?? true)
+            session.setMicRouted(session.micOverride ?? (session.knownMuted != true))
             return
         }
 
@@ -437,10 +440,10 @@ public final class SessionManager {
     }
 
     /// Mute / presenting state of desktop Zoom and Teams sessions via Accessibility (browser tabs report their own).
-    /// Only needed when it changes something: several sessions (mic routing) or auto-hide while presenting.
+    /// Only needed when it changes something: a session with your mic (mute) or auto-hide while presenting.
     private func refreshDesktopMeetingStates() async {
         guard MeetingStateInspector.isAvailable,
-              activeSessions.count > 1 || settings.privacy.autoHideWhileSharing
+              activeSessions.contains(where: \.metadata.includesMicrophone) || settings.privacy.autoHideWhileSharing
         else { return }
         let targets = activeSessions.compactMap { session -> (SessionID, String?, pid_t)? in
             guard session.metadata.isolation != .browserExtension, let pid = session.metadata.source.processID else { return nil }
@@ -457,9 +460,16 @@ public final class SessionManager {
         }
     }
 
-    /// Hotkey: cycles mic routing manually (A → B → … → all → A).
+    /// Hotkey: cycles mic routing manually (A → B → … → all → A). With one meeting it toggles your mic for it
+    /// (off ↔ automatic), e.g. while muted in a browser window PalMeet can't read the mute state from.
     public func cycleMicRouting() {
         let sessions = activeSessions.filter { $0.metadata.includesMicrophone }
+        if sessions.count == 1 {
+            let session = sessions[0]
+            session.micOverride = session.isMicRouted ? false : nil
+            updateMicRouting()
+            return
+        }
         guard sessions.count > 1 else { return }
         let routedIndices = sessions.indices.filter { sessions[$0].isMicRouted }
         let next: Int? = routedIndices.count == 1 ? (routedIndices[0] + 1 < sessions.count ? routedIndices[0] + 1 : nil) : 0

@@ -63,6 +63,10 @@ private struct GeneralSettings: View {
                     Text("Parakeet v2: English only").tag("v2English")
                 }
                 Toggle("Live transcript while recording", isOn: setting(app, \.liveTranscription))
+                Toggle(isOn: setting(app, \.aiTranscriptCorrection)) {
+                    Text("Fix misheard words with AI after the meeting")
+                    Text("Your summary provider proofreads the transcript using the glossary, names on screen and context. It only corrects clear recognition errors and keeps the original wording.")
+                }
                 CommaListField(title: "Glossary (names, product terms; comma separated)", values: app.manager.settings.glossary) { values in
                     app.manager.updateSettings { $0.glossary = values }
                 }
@@ -374,8 +378,13 @@ private struct BrowserExtensionSettings: View {
     var body: some View {
         Form {
             Section("Why") {
-                Text("Chrome (and Edge, Brave, Arc) play every tab's audio through one shared process, even across profiles. To record a meeting tab in one Chrome window and another meeting in a different window or profile, install the PalMeet extension in each profile. It captures only the tab you choose.")
+                Text("Chrome (and Edge, Brave, Arc) play every tab's audio through one shared process, even across profiles. Without the extension, recording a browser meeting also records videos and calls in your other tabs and profiles, and PalMeet can't see when you're muted. The extension captures only the meeting tab and reports your mute state.")
                     .font(.callout)
+            }
+            Section("Your browser profiles") {
+                ExtensionProfilesView()
+                Text("“Set up…” opens that profile with step-by-step instructions. Install it in every profile you join meetings from.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
             Section("Setup") {
                 LabeledContent("1. Connect PalMeet to your browsers") {

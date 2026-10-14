@@ -76,7 +76,15 @@ public final class MeetingSession: Identifiable {
     /// Manual mic routing override (nil = follow automatic routing).
     public var micOverride: Bool?
     /// From the browser extension / Accessibility, when known.
-    public var knownMuted: Bool?
+    public var knownMuted: Bool? {
+        didSet {
+            if oldValue == true, knownMuted == false { unmutedAt = clock.offset() }
+        }
+    }
+    /// When the meeting last reported you unmuted (session offset); used to back-date the mic span.
+    private var unmutedAt: TimeInterval?
+    /// Mute is detected by polling (≈1 s), so you were already talking when it's noticed.
+    static let unmuteLeadIn: TimeInterval = 1.5
     public var isPresenting: Bool?
     public var meetingMode: MeetingMode
     public var prepNotes: String = "" {
@@ -399,7 +407,13 @@ public final class MeetingSession: Identifiable {
         guard metadata.includesMicrophone, routed != isMicRouted else { return }
         let offset = clock.offset()
         if routed {
-            metadata.micRouting.append(MicRouteSpan(start: offset))
+            var start = offset
+            if let unmutedAt, offset - unmutedAt < 3 {
+                // Unmuted just now: include the words spoken before the poll noticed, never overlapping the last span.
+                start = max(unmutedAt - Self.unmuteLeadIn, metadata.micRouting.last?.end ?? 0, 0)
+            }
+            unmutedAt = nil
+            metadata.micRouting.append(MicRouteSpan(start: start))
         } else if var last = metadata.micRouting.popLast() {
             last.end = offset
             metadata.micRouting.append(last)
@@ -611,7 +625,7 @@ public final class MeetingSession: Identifiable {
             fail("Transcription failed: \(error.localizedDescription)")
             return
         }
-        await summarize(using: settings.summaryProvider)
+        await summarize(using: settings.summaryProvider, proofread: settings.aiTranscriptCorrection)
     }
 
     /// Shorter tracks hold no speech worth a model run (the ASR pads short audio itself).
@@ -661,8 +675,9 @@ public final class MeetingSession: Identifiable {
     }
 
     /// Generates (or regenerates) the summary with the given provider. Transcript edits and speaker renames made
-    /// while the model is writing are kept and applied to the new summary.
-    public func summarize(using kind: LLMProviderKind, model: String? = nil) async {
+    /// while the model is writing are kept and applied to the new summary. With `proofread`, the same provider
+    /// also corrects misheard words in the transcript (in parallel, so it adds no waiting time).
+    public func summarize(using kind: LLMProviderKind, model: String? = nil, proofread: Bool = false) async {
         guard let snapshot = transcript else { return }
         let settings = settings()
         stage = .summarizing
@@ -675,12 +690,25 @@ public final class MeetingSession: Identifiable {
             summarizer.chunkDuration = 10 * 60
         }
         let requestNames = Dictionary(snapshot.speakers.map { ($0.id, $0.displayName) }, uniquingKeysWith: { a, _ in a })
+        let corrector = TranscriptCorrector(provider: provider, model: summarizer.model)
+        let screenNames = Array(Set(screenshots.flatMap(\.nameCandidates))).sorted()
+        let title = metadata.title
+        let glossary = settings.glossary
+        // Best effort: a failed proofreading pass never blocks the summary.
+        async let proofreading: [TranscriptCorrector.Fix] = proofread
+            ? ((try? await corrector.corrections(transcript: snapshot, glossary: glossary, screenNames: screenNames, title: title)) ?? [])
+            : []
         do {
             let output = try await summarizer.summarize(
                 metadata: metadata, transcript: snapshot, screenshots: screenshots,
                 notes: notes, folder: folder, glossary: settings.glossary
             )
             var current = transcript ?? snapshot
+            let fixes = await proofreading
+            if !fixes.isEmpty {
+                let applied = TranscriptCorrector.apply(fixes, to: &current)
+                logger.info("Proofreading fixed \(applied, privacy: .public) of \(fixes.count, privacy: .public) proposed words")
+            }
             // LLM-proposed names never override names the user set.
             for (speakerID, name) in output.speakerNames where current.speaker(speakerID)?.nameSource != "user" {
                 current.renameSpeaker(speakerID, to: name, source: "transcript")
@@ -706,6 +734,12 @@ public final class MeetingSession: Identifiable {
             stage = .ready
         } catch {
             // The transcript is already saved; the summary can be regenerated from the review screen.
+            let fixes = await proofreading
+            if !fixes.isEmpty, var current = transcript {
+                TranscriptCorrector.apply(fixes, to: &current)
+                transcript = current
+                try? services.store.save(current, metadata: metadata, in: folder)
+            }
             metadata.status = .ready
             metadata.lastError = "Summary failed: \(error.localizedDescription)"
             persistMetadata()

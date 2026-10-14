@@ -1,3 +1,4 @@
+import CaptureKit
 import CopilotKit
 import PalMeetCore
 import SessionKit
@@ -102,7 +103,7 @@ struct LiveSessionView: View {
                             .frame(width: 140)
                             .disabled(!session.metadata.includesMicrophone)
                         }
-                        Text(session.isMicRouted ? "Your microphone is going to this meeting." : "Your microphone is not routed here.")
+                        Text(micStatus)
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -138,6 +139,22 @@ struct LiveSessionView: View {
     private func addNote() {
         session.addNote(note)
         note = ""
+    }
+
+    private var micStatus: String {
+        if session.micOverride == false { return "Your mic is off for this meeting (⌃⌥M or “Auto” to turn it back on)." }
+        if session.knownMuted == true, session.micOverride == nil {
+            return "You're muted in the meeting, so PalMeet leaves out what you say until you unmute."
+        }
+        if session.isMicRouted {
+            let blindBrowser = session.metadata.isolation != .browserExtension
+                && (MeetingApp.lookup(bundleID: session.metadata.source.bundleID)?.isBrowser ?? false)
+            if blindBrowser, session.knownMuted == nil {
+                return "Your mic is going to this meeting. PalMeet can't see your mute state in a browser window: press ⌃⌥M while muted, or record the tab with the PalMeet extension."
+            }
+            return "Your microphone is going to this meeting."
+        }
+        return "Your microphone is not routed here."
     }
 }
 
@@ -195,6 +212,10 @@ struct TranscriptList: View {
                     .foregroundStyle(SessionPalette.speakerColor(segment.speakerID))
                 Text(Timecode.format(segment.start)).font(.caption).foregroundStyle(.secondary).monospacedDigit()
                 if segment.isEdited { Image(systemName: "pencil").font(.caption2).foregroundStyle(.secondary) }
+                if let original = segment.originalText, !segment.isEdited {
+                    Image(systemName: "wand.and.stars").font(.caption2).foregroundStyle(.secondary)
+                        .help("Misheard words corrected by AI. Recognized as: “\(original)”")
+                }
             }
             if editing == segment.id {
                 TextField("", text: $draft, axis: .vertical)
@@ -212,6 +233,9 @@ struct TranscriptList: View {
                 Button("Edit text") {
                     draft = segment.text
                     editing = segment.id
+                }
+                if let original = segment.originalText, original != segment.text {
+                    Button("Restore original (before AI correction)") { session.editSegment(segment.id, text: original) }
                 }
                 if let transcript = session.transcript {
                     Menu("Assign to speaker") {

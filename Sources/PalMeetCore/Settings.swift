@@ -105,6 +105,8 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var appearance = AppearanceSettings()
     /// Custom vocabulary: names, product terms, acronyms.
     public var glossary: [String] = []
+    /// After a meeting, the summary provider proofreads the transcript for misheard words (names, jargon).
+    public var aiTranscriptCorrection = true
     public var storageRoot: String?
     public var hasCompletedOnboarding = false
 
@@ -138,6 +140,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
         privacy = (try? c.decodeIfPresent(PrivacySettings.self, forKey: .privacy)) ?? d.privacy
         appearance = (try? c.decodeIfPresent(AppearanceSettings.self, forKey: .appearance)) ?? d.appearance
         glossary = try c.decodeIfPresent([String].self, forKey: .glossary) ?? d.glossary
+        aiTranscriptCorrection = try c.decodeIfPresent(Bool.self, forKey: .aiTranscriptCorrection) ?? d.aiTranscriptCorrection
         storageRoot = try c.decodeIfPresent(String.self, forKey: .storageRoot)
         hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? d.hasCompletedOnboarding
     }

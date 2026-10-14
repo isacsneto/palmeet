@@ -209,6 +209,8 @@ public struct TranscriptSegment: Codable, Sendable, Hashable, Identifiable {
     public var isEdited: Bool
     /// True for segments produced by the live pass (replaced by the final pass).
     public var isLive: Bool
+    /// The speech recognizer's text, kept when the AI proofreading pass changed `text`.
+    public var originalText: String?
 
     public init(
         id: UUID = UUID(),

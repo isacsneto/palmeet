@@ -64,6 +64,10 @@ struct ReviewView: View {
                 ForEach(LLMProviderKind.allCases) { kind in
                     Button(kind.displayName) { Task { await session.summarize(using: kind) } }
                 }
+                Divider()
+                Button("Fix misheard words, then regenerate") {
+                    Task { await session.summarize(using: app.manager.settings.summaryProvider, proofread: true) }
+                }
             } label: {
                 Label("Regenerate summary", systemImage: "sparkles")
             }

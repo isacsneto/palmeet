@@ -238,10 +238,26 @@ final class FakeLLM: LLMProvider, @unchecked Sendable {
     var summaryDelay: Duration = .zero
     var summaryJSON = #"{"title":"Fake summary","tldr":"Everything worked.","action_items":[{"owner":"Speaker 1","task":"Ship it","ref":"00:00:01"}],"speaker_names":{"S1":"Maria Silva"}}"#
     var copilotReply = "FOR_ME|yes\nOPTION|high|Yes, I'll review it today."
+    /// Answer to the transcript proofreading pass (counted separately from summaries).
+    var proofreadJSON = #"{"fixes":[]}"#
+    /// When set, answers proofreading from the prompt (timestamps depend on timing).
+    var proofreadResponder: (@Sendable (String) -> String)?
+    let proofreadCalls = Counter()
+    private var _lastProofreadPrompt = ""
 
     var lastSummaryPrompt: String { lock.withLock { _lastSummaryPrompt } }
+    var lastProofreadPrompt: String { lock.withLock { _lastProofreadPrompt } }
 
     func complete(_ request: LLMRequest) async throws -> LLMResponse {
+        if request.system == TranscriptCorrector.systemPrompt {
+            proofreadCalls.increment()
+            let text = request.messages.flatMap(\.parts).compactMap { part -> String? in
+                if case .text(let t) = part { return t }
+                return nil
+            }.joined(separator: "\n")
+            lock.withLock { _lastProofreadPrompt = text }
+            return LLMResponse(text: proofreadResponder?(text) ?? proofreadJSON)
+        }
         completeCalls.increment()
         let text = request.messages.flatMap(\.parts).compactMap { part -> String? in
             if case .text(let t) = part { return t }
