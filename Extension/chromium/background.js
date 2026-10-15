@@ -373,6 +373,13 @@ async function handleStartCapture({ sessionId, windowId, tabId }) {
   await persist();
   sendCaptureState(sessionId, 'awaitingGesture');
   refreshBadges();
+  // Bring the meeting tab forward so the blinking icon (and the ⌥⇧R shortcut) are right there.
+  try {
+    await chrome.tabs.update(tabId, { active: true });
+    await chrome.windows.update(targetWindow, { focused: true, drawAttention: true });
+  } catch {
+    // Window closed meanwhile; the request is cleaned up when the tab goes away.
+  }
 }
 
 /** Action click or keyboard command in `tab`'s window. */

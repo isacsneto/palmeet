@@ -31,6 +31,7 @@ final class AppState {
         windows.attach(to: self)
         Hotkeys.register(app: self)
         applyActivationPolicy()
+        updates.isRecording = { [manager] in !manager.activeSessions.isEmpty }
         updates.start()
     }
 
@@ -52,26 +53,44 @@ final class AppState {
 
     /// ⌃⌥R: stop the target session if its window is frontmost and recording; otherwise record the frontmost
     /// meeting window, or open the picker.
+    /// True while the record hotkey is starting a session (starting takes a moment; repeated presses are ignored).
+    private var startingFromHotkey = false
+
     func toggleRecordingFrontmost() {
+        guard !startingFromHotkey else { return }
         if let frontmostID = CaptureKitBridge.frontmostWindowID(),
            let session = manager.activeSessions.first(where: { $0.metadata.source.windowID == frontmostID }) {
             stop(session)
             return
         }
+        startingFromHotkey = true
         Task {
+            defer { startingFromHotkey = false }
             do {
                 let windows = try await manager.availableWindows()
-                if let frontmostID = CaptureKitBridge.frontmostWindowID(),
-                   let window = windows.first(where: { $0.id == frontmostID && $0.isMeetingApp }) {
-                    let choice = manager.browserMeetingChoices(windows: windows).first { choice in
-                        if case .browserTab(_, _, _, let scID) = choice { return scID == window.id }
-                        return false
-                    } ?? .window(window)
-                    let session = try await manager.startSession(choice)
-                    selectedSessionID = session.id
-                } else {
+                guard let frontmostID = CaptureKitBridge.frontmostWindowID(),
+                      let window = windows.first(where: { $0.id == frontmostID && $0.isMeetingApp })
+                else {
                     presentPicker()
+                    return
                 }
+                let tabChoice = manager.browserMeetingChoices(windows: windows).first { choice in
+                    if case .browserTab(_, _, _, let scID) = choice { return scID == window.id }
+                    return false
+                }
+                // A browser window without a matching extension tab would record the whole browser (every tab and
+                // profile, mute state unknown): let the user choose in the picker instead of doing that silently.
+                guard let choice = tabChoice ?? (window.isBrowser ? nil : .window(window)) else {
+                    presentPicker()
+                    return
+                }
+                if let existing = manager.sessionRecording(choice) {
+                    selectedSessionID = existing.id
+                    openMainWindow()
+                    return
+                }
+                let session = try await manager.startSession(choice)
+                selectedSessionID = session.id
             } catch {
                 lastError = error.localizedDescription
                 presentPicker()
@@ -82,6 +101,11 @@ final class AppState {
     func start(_ choices: [SourceChoice], includeMicrophone: Bool) {
         Task {
             for choice in choices {
+                // Picking a meeting's tab and its whole browser window records it once, through the tab.
+                if case .window(let window) = choice, window.isBrowser, choices.contains(where: { other in
+                    if case .browserTab(_, _, _, let scID) = other { return scID == window.id }
+                    return false
+                }) { continue }
                 do {
                     let session = try await manager.startSession(choice, includeMicrophone: includeMicrophone)
                     selectedSessionID = session.id

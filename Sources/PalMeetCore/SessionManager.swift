@@ -55,6 +55,18 @@ public enum IsolationPreview: Equatable, Sendable {
     }
 }
 
+/// A call app on this Mac that PalMeet isn't recording but that is using the microphone (e.g. Teams while you
+/// record a Google Meet). `muted` comes from Accessibility when available.
+public struct OtherCall: Equatable, Sendable {
+    public var appName: String
+    public var muted: Bool?
+
+    public init(appName: String, muted: Bool?) {
+        self.appName = appName
+        self.muted = muted
+    }
+}
+
 public enum SessionError: Error, LocalizedError {
     case tooManySessions(Int)
     case alreadyRecording(String)
@@ -76,6 +88,8 @@ public final class SessionManager {
     public internal(set) var library: [MeetingSession] = []
     public private(set) var browserProfiles: [BrowserProfile] = []
     public private(set) var bridgePort: UInt16?
+    /// Call apps not recorded by PalMeet that are using the mic (refreshed every 2 s while recording with the mic).
+    public internal(set) var otherCalls: [OtherCall] = []
     public private(set) var lastUsedSessionID: SessionID?
 
     public let secrets: SecretStore
@@ -312,7 +326,7 @@ public final class SessionManager {
 
     @discardableResult
     public func startSession(_ choice: SourceChoice, title: String? = nil, includeMicrophone: Bool? = nil, adoptingBridgeSession: UUID? = nil) async throws -> MeetingSession {
-        if case .window(let window) = choice, let existing = activeSessions.first(where: { $0.metadata.source.windowID == window.id }) {
+        if adoptingBridgeSession == nil, let existing = sessionRecording(choice) {
             throw SessionError.alreadyRecording(existing.title)
         }
         let sessionID = adoptingBridgeSession ?? SessionID()
@@ -349,6 +363,21 @@ public final class SessionManager {
         }
     }
 
+    /// The running session that already records `choice`'s meeting: the same window, the same tab, or a whole
+    /// browser window that already contains the tab. Starting it again would record the meeting twice.
+    public func sessionRecording(_ choice: SourceChoice) -> MeetingSession? {
+        switch choice {
+        case .window(let window):
+            return activeSessions.first { $0.metadata.source.windowID == window.id }
+        case .browserTab(let profile, _, let tab, let scWindowID):
+            return activeSessions.first { session in
+                let source = session.metadata.source
+                if source.browserProfileID == profile.id, source.browserTabID == tab.tabID { return true }
+                return session.metadata.isolation != .browserExtension && scWindowID != nil && source.windowID == scWindowID
+            }
+        }
+    }
+
     /// Starts a session from already-built capture components (also the seam tests use).
     @discardableResult
     func startSession(
@@ -370,7 +399,8 @@ public final class SessionManager {
             source: source,
             isolation: remote?.isolation ?? .none,
             includesMicrophone: includeMicrophone ?? settings.includeMicByDefault,
-            language: settings.language
+            language: settings.language,
+            appVersion: Self.appVersion
         )
         metadata.concurrentWith = activeSessions.map(\.id)
         let folder = try services.store.createFolder(for: metadata)
@@ -387,6 +417,8 @@ public final class SessionManager {
         updateMicRouting()
         return session
     }
+
+    nonisolated static let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
 
     public func stop(_ session: MeetingSession) async {
         guard activeSessions.contains(where: { $0.id == session.id }) else { return }
@@ -445,13 +477,20 @@ public final class SessionManager {
 
     /// Decides which sessions hear your mic. One session: yes unless you're muted in that meeting. Several: manual
     /// overrides win, then sessions known to be unmuted, then the only meeting app using the mic, then the frontmost
-    /// meeting window. What you say while muted never reaches the transcript (live or final) or the kept audio.
+    /// meeting window. A meeting that can't report its mute state doesn't get the mic while you're unmuted in
+    /// another call app that PalMeet isn't recording (e.g. talking in Teams while recording a Meet). What you say while muted never reaches the transcript (live or final) or the kept audio.
     func updateMicRouting() {
         let candidates = activeSessions.filter { $0.metadata.includesMicrophone && $0.stage.isCapturing }
         guard !candidates.isEmpty else { return }
+        let talkingElsewhere = otherCalls.first { $0.muted == false }
+        for session in candidates {
+            session.otherCallUsingMic = session.knownMuted == nil ? (talkingElsewhere ?? otherCalls.first) : nil
+        }
         if candidates.count == 1 {
             let session = candidates[0]
-            session.setMicRouted(session.micOverride ?? (session.knownMuted != true))
+            // Unknown mute here while you're unmuted in another call: you're talking there, not here.
+            let automatic = session.knownMuted == false || (session.knownMuted == nil && talkingElsewhere == nil)
+            session.setMicRouted(session.micOverride ?? automatic)
             return
         }
 
@@ -478,6 +517,8 @@ public final class SessionManager {
         if !unmuted.isEmpty { return Set(unmuted.map(\.id)) }
         let unknownMute = sessions.filter { $0.knownMuted == nil }
         guard !unknownMute.isEmpty else { return [] }
+        // You're unmuted in a call PalMeet isn't recording, and these meetings can't say whether you're muted.
+        if otherCalls.contains(where: { $0.muted == false }) { return [] }
 
         let processes = AudioProcessInspector.processes().filter(\.isRunningInput)
         let usingMic = unknownMute.filter { session in
@@ -493,25 +534,53 @@ public final class SessionManager {
         return Set(unknownMute.filter(\.isMicRouted).map(\.id))
     }
 
-    /// Mute / presenting state of desktop Zoom and Teams sessions via Accessibility (browser tabs report their own).
-    /// Only needed when it changes something: a session with your mic (mute) or auto-hide while presenting.
+    /// Mute / presenting state of desktop Zoom and Teams sessions via Accessibility (browser tabs report their own),
+    /// and other call apps using the mic. Only needed when it changes something: a session with your mic (mute,
+    /// other calls) or auto-hide while presenting.
     private func refreshDesktopMeetingStates() async {
-        guard MeetingStateInspector.isAvailable,
-              activeSessions.contains(where: \.metadata.includesMicrophone) || settings.privacy.autoHideWhileSharing
-        else { return }
+        let withMic = activeSessions.contains(where: \.metadata.includesMicrophone)
+        guard withMic || settings.privacy.autoHideWhileSharing else {
+            otherCalls = []
+            return
+        }
+        let accessibility = MeetingStateInspector.isAvailable
         let targets = activeSessions.compactMap { session -> (SessionID, String?, pid_t)? in
-            guard session.metadata.isolation != .browserExtension, let pid = session.metadata.source.processID else { return nil }
+            guard accessibility, session.metadata.isolation != .browserExtension, let pid = session.metadata.source.processID else { return nil }
             return (session.id, session.metadata.source.bundleID, pid)
         }
-        guard !targets.isEmpty else { return }
-        let states = await Task.detached(priority: .utility) {
-            targets.map { ($0.0, MeetingStateInspector.state(bundleID: $0.1, pid: $0.2)) }
+        let recorded = activeSessions.filter { $0.metadata.isolation != .browserExtension }
+            .map { MeetingApp.audioFamily(bundleID: $0.metadata.source.bundleID, pid: $0.metadata.source.processID) }
+        let (states, others) = await Task.detached(priority: .utility) {
+            let states = targets.map { ($0.0, MeetingStateInspector.state(bundleID: $0.1, pid: $0.2)) }
+            let others = withMic ? Self.otherCallsUsingMic(excluding: recorded, accessibility: accessibility) : []
+            return (states, others)
         }.value
         for (id, state) in states {
             guard let session = activeSessions.first(where: { $0.id == id }) else { continue }
             session.knownMuted = state.muted
             session.isPresenting = state.presenting
         }
+        otherCalls = others
+    }
+
+    /// Desktop call apps (Teams, Zoom, Slack, …) using the mic that no session records.
+    nonisolated static func otherCallsUsingMic(excluding recorded: [AppAudioFamily], accessibility: Bool) -> [OtherCall] {
+        let usingMic = AudioProcessInspector.processes().filter { process in
+            process.isRunningInput && !recorded.contains { $0.contains(process) }
+        }
+        var claimed = Set<pid_t>()
+        var calls: [OtherCall] = []
+        for app in MeetingApp.known where !app.isBrowser {
+            let family = MeetingApp.audioFamily(bundleID: app.bundleID, pid: nil)
+            let processes = usingMic.filter { family.contains($0) && !claimed.contains($0.pid) }
+            guard !processes.isEmpty else { continue }
+            claimed.formUnion(processes.map(\.pid))
+            // Mute state lives in the app's main process (helpers have no UI).
+            let pid = NSRunningApplication.runningApplications(withBundleIdentifier: app.bundleID).first?.processIdentifier
+            let muted = accessibility ? pid.flatMap { MeetingStateInspector.state(bundleID: app.bundleID, pid: $0).muted } : nil
+            calls.append(OtherCall(appName: app.name, muted: muted))
+        }
+        return calls
     }
 
     /// Hotkey: cycles mic routing manually (A → B → … → all → A). With one meeting it toggles your mic for it
@@ -548,14 +617,16 @@ public final class SessionManager {
             guard let session = activeSessions.first(where: { $0.id == sessionID }) else { return }
             switch state {
             case .awaitingGesture:
-                session.warn("Click the PalMeet icon in that Chrome window (or press its shortcut) to allow tab capture.")
+                session.waitingForBrowserClick = true
             case .capturing:
-                break
+                session.waitingForBrowserClick = false
             case .stopped(let reason):
+                session.waitingForBrowserClick = false
                 // Closed tab, navigated away, clicked "stop" in the browser: the meeting is over for this tab.
                 session.warn("Tab capture stopped\(reason.map { ": \($0)" } ?? ""). The recording was stopped.")
                 Task { await self.stop(session) }
             case .error(let message):
+                session.waitingForBrowserClick = false
                 session.warn("Tab capture error: \(message)")
             }
         case .userInitiatedCapture(let sessionID, let profileID, let windowID, let tabID):

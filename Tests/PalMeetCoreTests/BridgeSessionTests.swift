@@ -123,6 +123,48 @@ struct BridgeSessionTests {
         await h.manager.shutdown()
     }
 
+    /// One meeting is recorded once: pressing the record hotkey again, or picking the same tab, doesn't start a
+    /// second recording, and a tab inside a window that's already recorded whole is refused.
+    @Test func aMeetingIsNeverRecordedTwice() async throws {
+        let token = "bridge-test-token-dup"
+        let h = Harness(bridgeToken: token)
+        defer { h.cleanup() }
+        h.manager.start()
+        let port = try #require(h.manager.bridgePort)
+        let ext = FakeExtension(port: port, profile: "profile-work")
+        try await ext.connect(token: token, label: "Work", windowID: 11, tabID: 101, title: "Daily")
+        #expect(await waitUntil { h.manager.browserProfiles.first?.windows.isEmpty == false })
+        let choice = try #require(h.manager.browserMeetingChoices(windows: []).first)
+
+        let session = try await h.manager.startSession(choice, includeMicrophone: false)
+        #expect(try await ext.receiveJSON()?["type"] as? String == "startCapture")
+        let wire = session.id.uuidString.lowercased()
+        try await ext.send(#"{"type":"captureState","sessionId":"\#(wire)","state":"awaitingGesture"}"#)
+        #expect(await waitUntil { session.waitingForBrowserClick }, "the live view asks for the click")
+
+        await #expect(throws: SessionError.self) { try await h.manager.startSession(choice, includeMicrophone: false) }
+        #expect(h.manager.activeSessions.count == 1)
+        #expect(h.manager.sessionRecording(choice)?.id == session.id)
+
+        try await ext.send(#"{"type":"captureState","sessionId":"\#(wire)","state":"capturing","windowId":11,"tabId":101}"#)
+        #expect(await waitUntil { !session.waitingForBrowserClick })
+        await h.manager.stop(session)
+
+        // A whole-window recording of the browser already contains the tab.
+        let whole = try await h.manager.startSession(
+            id: SessionID(),
+            source: CaptureSourceDescriptor(kind: .window, appName: "Google Chrome", bundleID: "com.google.Chrome", processID: 624, windowID: 470, windowTitle: "Daily 🔊"),
+            title: "Daily 🔊", remote: FakeRemoteAudio(), windowID: 470, frames: nil, includeMicrophone: false, preview: .isolated("test")
+        )
+        guard case .browserTab(let profile, let window, let tab, _) = choice else { Issue.record("not a tab"); return }
+        let inThatWindow = SourceChoice.browserTab(profile: profile, window: window, tab: tab, scWindowID: 470)
+        #expect(h.manager.sessionRecording(inThatWindow)?.id == whole.id)
+        await #expect(throws: SessionError.self) { try await h.manager.startSession(inThatWindow, includeMicrophone: false) }
+        await h.manager.stop(whole)
+        ext.close()
+        await h.manager.shutdown()
+    }
+
     @Test func captureStartedFromTheBrowserIsAdoptedAndStopsWithTheTab() async throws {
         let token = "bridge-test-token-2"
         let h = Harness(bridgeToken: token)

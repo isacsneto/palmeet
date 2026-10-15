@@ -21,6 +21,10 @@ final class UpdateController: NSObject, SPUUpdaterDelegate {
     private(set) var accessSource: AccessSource = .none
     private(set) var lastCheck: Date?
     private(set) var lastError: String?
+    /// An update is downloaded and waits for the running recordings to finish before restarting the app.
+    private(set) var waitingForRecordings = false
+    /// Whether any meeting is being recorded (set by AppState).
+    @ObservationIgnored var isRecording: @MainActor () -> Bool = { false }
 
     @ObservationIgnored private var controller: SPUStandardUpdaterController?
     @ObservationIgnored private var observation: NSKeyValueObservation?
@@ -139,6 +143,21 @@ final class UpdateController: NSObject, SPUUpdaterDelegate {
         return base + (base.contains("?") ? "&" : "?") + "t=\(Int(Date().timeIntervalSince1970))"
     }
 
+    /// Installing restarts PalMeet, which would cut a meeting short: wait until no meeting is being recorded.
+    nonisolated func updater(_ updater: SPUUpdater, shouldPostponeRelaunchForUpdate item: SUAppcastItem, untilInvokingBlock installHandler: @escaping () -> Void) -> Bool {
+        let install = UncheckedSendable(installHandler)
+        return MainActor.assumeIsolated {
+            guard self.isRecording() else { return false }
+            self.waitingForRecordings = true
+            Task { @MainActor in
+                while self.isRecording() { try? await Task.sleep(for: .seconds(3)) }
+                self.waitingForRecordings = false
+                install.value()
+            }
+            return true
+        }
+    }
+
     nonisolated func updater(_ updater: SPUUpdater, didFinishUpdateCycleFor updateCheck: SPUUpdateCheck, error: (any Error)?) {
         let message = error.map { ($0 as NSError).localizedDescription }
         MainActor.assumeIsolated {
@@ -151,4 +170,10 @@ final class UpdateController: NSObject, SPUUpdaterDelegate {
             }
         }
     }
+}
+
+/// Carries a non-Sendable value (Sparkle's install block, which it expects back on the main thread) across tasks.
+private struct UncheckedSendable<Value>: @unchecked Sendable {
+    let value: Value
+    init(_ value: Value) { self.value = value }
 }

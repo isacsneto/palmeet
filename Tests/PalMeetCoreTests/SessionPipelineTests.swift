@@ -387,6 +387,45 @@ struct SessionManagerPolicyTests {
         await h.manager.stop(chrome)
     }
 
+    /// Recording a Meet in a way that can't see its mute button, while talking in a Teams call that isn't recorded.
+    @Test func talkingInAnotherCallKeepsYourMicOutOfThisMeeting() async throws {
+        let h = Harness()
+        defer { h.cleanup() }
+        let meet = try await h.start(title: "Meet", bundleID: "com.google.Chrome", pid: 1)
+        #expect(meet.knownMuted == nil)
+        h.manager.updateMicRouting()
+        #expect(meet.isMicRouted, "nothing else going on: your mic is for this meeting")
+
+        h.manager.otherCalls = [OtherCall(appName: "Microsoft Teams", muted: false)]
+        h.manager.updateMicRouting()
+        #expect(!meet.isMicRouted, "unmuted in Teams: you're talking there")
+        #expect(meet.otherCallUsingMic?.appName == "Microsoft Teams")
+
+        h.manager.otherCalls = [OtherCall(appName: "Microsoft Teams", muted: true)]
+        h.manager.updateMicRouting()
+        #expect(meet.isMicRouted, "muted in Teams: you're talking here")
+
+        h.manager.otherCalls = [OtherCall(appName: "Microsoft Teams", muted: false)]
+        meet.knownMuted = false
+        h.manager.updateMicRouting()
+        #expect(meet.isMicRouted, "unmuted in this meeting too: they hear you, so it's recorded")
+        #expect(meet.otherCallUsingMic == nil)
+
+        meet.knownMuted = nil
+        h.manager.setMicOverride(meet, routed: true)
+        #expect(meet.isMicRouted, "“On” always wins")
+
+        // Two meetings that can't see their mute buttons, while you talk in Teams: neither gets your voice.
+        h.manager.setMicOverride(meet, routed: nil)
+        let other = try await h.start(title: "Other", bundleID: "us.zoom.xos", pid: 2)
+        h.manager.updateMicRouting()
+        #expect(!meet.isMicRouted && !other.isMicRouted)
+        await h.manager.stop(other)
+        await h.manager.stop(meet)
+        let spans = meet.metadata.micRouting
+        #expect(!spans.isEmpty && spans.allSatisfy { $0.end != nil })
+    }
+
     @Test func micRoutingFollowsMuteStateAndCycling() async throws {
         let h = Harness()
         defer { h.cleanup() }

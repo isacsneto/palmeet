@@ -77,6 +77,10 @@ public final class MeetingSession: Identifiable {
     public private(set) var isMicRouted = false
     public private(set) var copilotEnabled = false
     public private(set) var copilotUsage = LLMUsage()
+    /// Another call app using your mic while this meeting can't report whether you're muted (status line).
+    public internal(set) var otherCallUsingMic: OtherCall?
+    /// Browser tab sessions: the extension is waiting for a click on its icon before it can capture the tab.
+    public internal(set) var waitingForBrowserClick = false
     /// Manual mic routing override (nil = follow automatic routing).
     public var micOverride: Bool?
     /// From the browser extension / Accessibility, when known.

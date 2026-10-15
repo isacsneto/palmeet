@@ -47,7 +47,10 @@ struct MenuBarView: View {
                 Button("Open PalMeet") { app.openMainWindow() }
                 Button("Copilot panel") { app.windows.toggleCopilotPanel() }
                 Spacer()
-                if app.updates.isAvailable {
+                if app.updates.waitingForRecordings {
+                    Image(systemName: "arrow.down.circle.dotted")
+                        .help("An update is ready and installs when your recordings finish.")
+                } else if app.updates.isAvailable {
                     Button {
                         app.updates.checkForUpdates()
                     } label: {

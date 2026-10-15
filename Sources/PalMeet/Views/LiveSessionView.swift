@@ -12,6 +12,7 @@ struct LiveSessionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
+            if session.waitingForBrowserClick { browserClickBanner }
             WarningBanner(messages: session.warnings)
             HSplitView {
                 TranscriptList(session: session, segments: session.liveSegments, editable: false)
@@ -75,6 +76,22 @@ struct LiveSessionView: View {
             .buttonStyle(.borderedProminent)
             .tint(.red)
         }
+    }
+
+    /// Chrome only lets an extension record a tab after you click its icon (or press its shortcut) in that window.
+    private var browserClickBanner: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "hand.tap.fill").font(.title2).foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("The meeting audio isn't being recorded yet").font(.headline)
+                Text("In \(session.metadata.source.appName), click the PalMeet icon in the toolbar (it blinks “REC?”) or press ⌥⇧R in the meeting window. Chrome needs this one click per meeting before PalMeet can hear the tab.")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("Cancel recording", role: .destructive) { app.stop(session) }
+        }
+        .padding(12)
+        .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
     }
 
     private var sidePanel: some View {
@@ -147,6 +164,14 @@ struct LiveSessionView: View {
 
     private var micStatus: String {
         if session.micOverride == false { return "Your mic is off for this meeting (⌃⌥M or “Auto” to turn it back on)." }
+        if let call = session.otherCallUsingMic, session.micOverride == nil {
+            if call.muted == false {
+                return "You're unmuted in \(call.appName), which PalMeet isn't recording, so what you say is left out here. Choose “On” if you're talking in this meeting."
+            }
+            if session.isMicRouted {
+                return "\(call.appName) is also using your mic and PalMeet can't tell which call you're talking in. If you speak in \(call.appName), press ⌃⌥M or choose “Off”."
+            }
+        }
         if session.knownMuted == true, session.micOverride == nil {
             return "You're muted in the meeting, so PalMeet leaves out what you say until you unmute."
         }

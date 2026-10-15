@@ -54,7 +54,7 @@ swift scripts/make-icon.swift     # regenerate the app icon (Resources/Assets.xc
 
 ## First run
 
-1. **Permissions.** The onboarding screen asks for Screen & System Audio Recording, Microphone, and System Audio Recording. System Audio is prompted the first time you record an app. Accessibility is optional; it reads mute and sharing state from the Zoom and Teams desktop apps.
+1. **Permissions.** The onboarding screen asks for Screen & System Audio Recording, Microphone, and System Audio Recording. System Audio is prompted the first time you record an app. Accessibility is optional; it reads mute and sharing state from the Zoom and Teams desktop apps. It also tells PalMeet when you're unmuted in a Teams or Zoom call that isn't being recorded, so your voice there stays out of the meeting you are recording.
 2. **AI provider.** Pick one in Settings → AI Providers.
    - **CLIs** reuse your login: `claude`, `codex`, `gemini`, `cursor-agent`.
    - **APIs** need a key, which is stored in the Keychain.
@@ -69,7 +69,8 @@ Chrome plays the audio of every tab, in every profile, through one process. Per-
 1. Settings → Browser Extension → **Install connector**. This writes the native-messaging host manifest.
 2. `chrome://extensions` → Developer mode → **Load unpacked** → `Extension/chromium`. You can also open the folder from Settings. Repeat this in **each profile** you use for meetings.
 3. In PalMeet's picker, browser meeting tabs appear one per window, e.g. "Chrome · Work · Google Meet – …".
-4. After you start a tab, click the PalMeet icon in that Chrome window once. Chrome requires a user gesture for tab capture.
+4. After you start a tab, Chrome brings it forward. Click the PalMeet icon (it blinks **REC?**) or press ⌥⇧R in that window once; Chrome requires a user gesture for tab capture. Until then the live view shows an orange "isn't being recorded yet" banner. Pin the extension so the icon is always visible.
+5. A meeting is recorded once: pressing ⌃⌥R again while it starts, or picking both the tab and its browser window, doesn't start a second recording.
 
 Details: [Extension/chromium/README.md](Extension/chromium/README.md) and [PROTOCOL.md](Extension/chromium/PROTOCOL.md).
 
