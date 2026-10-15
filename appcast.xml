@@ -3,6 +3,20 @@
     <channel>
         <title>PalMeet</title>
         <item>
+            <title>0.2.4</title>
+            <pubDate>Thu, 15 Oct 2026 13:11:09 -0300</pubDate>
+            <sparkle:version>261015131036</sparkle:version>
+            <sparkle:shortVersionString>0.2.4</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<h2>PalMeet 0.2.4</h2><ul>
+<li>Meeting audio is now compressed (about 6× smaller) once the meeting is transcribed and summarized. Your existing meetings are converted once in the background. Choose Lossless or Original in Settings → Privacy → Recordings.</li>
+<li>"Delete audio after" now also runs while PalMeet stays open for days.</li>
+</ul>
+]]></description>
+            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.4.zip" length="15047178" type="application/octet-stream" sparkle:edSignature="gzOSrZ/S3KgwVnXByrIs6TibxuGikzOt9TO+uLYa6f/IqYYg5nmYiRSjTtCCq2JRTzILRmZ2YzP6Qau1eZOZAQ=="/>
+        </item>
+        <item>
             <title>0.2.3</title>
             <pubDate>Thu, 15 Oct 2026 12:27:26 -0300</pubDate>
             <sparkle:version>261015122654</sparkle:version>
@@ -30,20 +44,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.2.zip" length="15013681" type="application/octet-stream" sparkle:edSignature="zhmTs4KCIaix0L2iDsHhF3TF6JmuNhMtvGK1pUf3UfUUIzKL9RyekTjwE7QsEnHbuSZUKX1h5siMCwzNBtvvCA=="/>
-        </item>
-        <item>
-            <title>0.2.1</title>
-            <pubDate>Thu, 15 Oct 2026 12:06:56 -0300</pubDate>
-            <sparkle:version>261015120620</sparkle:version>
-            <sparkle:shortVersionString>0.2.1</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description><![CDATA[<h2>PalMeet 0.2.1</h2><ul>
-<li>The copilot, summaries and spelling fixes now use an AI provider that works. If the one you picked has no API key (or its CLI is logged out), PalMeet uses your Claude Code login, or another working provider, and says so in Settings → AI Providers.</li>
-<li>New **Meeting context** box in the live view: type the agenda, ticket, who's who, names and terms at any time. The copilot uses it immediately; the summary and spelling fixes use it afterwards. Saved with the meeting as context.md.</li>
-</ul>
-]]></description>
-            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.1.zip" length="14993857" type="application/octet-stream" sparkle:edSignature="fmqXtQr9B73l3cJZ6DgAo/vIEXyjRFvi9sJAD1k6yugmn3V+b67vUzCsw2rZDthQQYGI990fy3e3/mkoGyiPAA=="/>
         </item>
     </channel>
 </rss>
