@@ -6,7 +6,8 @@
 
 <p align="center">
   <b>Records, transcribes and summarizes your meetings, natively on your Mac.</b><br>
-  Any app window or browser tab · on-device speech recognition · the AI you already use
+  Any app window or browser tab · on-device speech recognition · the AI you already use<br>
+  <a href="#install-with-your-ai-assistant">Install with one prompt</a> · <a href="#getting-started">Build from source</a>
 </p>
 
 <p align="center">
@@ -56,6 +57,33 @@ flowchart LR
 ```
 
 Everything for a meeting is saved in `~/Documents/PalMeet/<date time> – <title>/`.
+
+## Install with your AI assistant
+
+Paste this into Claude Code, Codex, Gemini CLI, Cursor or any assistant that can run shell commands on your Mac. It installs the latest release, with no Xcode needed:
+
+```text
+Install the PalMeet macOS app for me (https://github.com/isacsneto/palmeet). Use the shell and follow these steps:
+
+1. Check this Mac: Apple Silicon (`uname -m` prints arm64) and macOS 15 or later (`sw_vers -productVersion`). If not, stop and tell me why.
+2. The repo is private, so use the GitHub CLI: install it if missing (`brew install gh`) and check `gh auth status` shows a login with access to isacsneto/palmeet. If not, ask me to run `gh auth login` and wait. Never print or save the token.
+3. In a new temporary folder, download the latest release:
+   - Read the update feed: `gh api -H "Accept: application/vnd.github.raw" "repos/isacsneto/palmeet/contents/appcast.xml?ref=releases"`. The first <enclosure url="…"> is the newest version; its file name is the part after the last "/" (e.g. PalMeet-0.2.5.zip).
+   - Download it: `gh api -H "Accept: application/vnd.github.raw" "repos/isacsneto/palmeet/contents/<file name>?ref=releases" > <file name>`, and check its size equals the enclosure's length.
+   - Unpack it with `ditto -x -k <file name> .` and check `codesign --verify --deep --strict PalMeet.app` passes.
+4. If PalMeet is already running (`pgrep -x PalMeet`), stop and ask me to quit it from its menu bar icon. Never kill it: a meeting may be recording.
+5. Install: remove /Applications/PalMeet.app if it exists, copy the new one there with `ditto`, then run `xattr -dr com.apple.quarantine /Applications/PalMeet.app` (the app isn't notarized).
+6. Register the browser connector: `/Applications/PalMeet.app/Contents/MacOS/PalMeet --install-connector` (fine if it says no supported browser was found).
+7. Launch it with `open /Applications/PalMeet.app`, then delete the temporary folder.
+8. Tell me the installed version and what's left for me to do:
+   - allow Screen & System Audio Recording and Microphone when PalMeet asks (Accessibility is optional);
+   - if I'm not logged in to the claude, codex, gemini or cursor-agent CLI, add an API key in Settings → AI Providers;
+   - for meetings in Chrome, load the extension in each Chrome profile: Settings → Browser Extension → Set up….
+
+If the download fails but Xcode 26 is installed, build from source instead: clone the repo, run `brew install xcodegen`, then `scripts/create-dev-cert.sh` and `scripts/install.sh --rebuild` from the repo folder.
+```
+
+After that, PalMeet updates itself through the same GitHub login.
 
 ## Getting started
 
