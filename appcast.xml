@@ -3,6 +3,20 @@
     <channel>
         <title>PalMeet</title>
         <item>
+            <title>0.2.5</title>
+            <pubDate>Thu, 15 Oct 2026 13:13:33 -0300</pubDate>
+            <sparkle:version>261015131246</sparkle:version>
+            <sparkle:shortVersionString>0.2.5</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<h2>PalMeet 0.2.5</h2><ul>
+<li>Meeting audio is compressed (about 6× smaller) once the meeting is transcribed and summarized; existing meetings are converted once. Choose Lossless or Original in Settings → Privacy → Recordings.</li>
+<li>"Delete audio after" counts from when PalMeet saved the meeting (an imported old video keeps its audio for the full period) and also runs while PalMeet stays open.</li>
+</ul>
+]]></description>
+            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.5.zip" length="15048157" type="application/octet-stream" sparkle:edSignature="R5kxlrpcAF3gzdIlGSWAfwMEVzIYyLNjFkFvbgRhn5OjbUFvhRpJ/gz2b9tsAooiH2Z+W9Qb1NIEG/mzhPmJBA=="/>
+        </item>
+        <item>
             <title>0.2.4</title>
             <pubDate>Thu, 15 Oct 2026 13:11:09 -0300</pubDate>
             <sparkle:version>261015131036</sparkle:version>
@@ -28,22 +42,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.3.zip" length="15036445" type="application/octet-stream" sparkle:edSignature="fy9TLH2LkCSRM77NYkWTwVlqnAHKZL0BXnFOne+y+ODgXdyENfllzj6q8fisnf8FsZ+VA1uyJVUcJc1r7QKEDg=="/>
-        </item>
-        <item>
-            <title>0.2.2</title>
-            <pubDate>Thu, 15 Oct 2026 12:19:46 -0300</pubDate>
-            <sparkle:version>261015121924</sparkle:version>
-            <sparkle:shortVersionString>0.2.2</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description><![CDATA[<h2>PalMeet 0.2.2</h2><ul>
-<li>A meeting is recorded only once. Pressing the record hotkey again while a recording starts no longer starts extra recordings, and PalMeet never records a whole Chrome window by itself when the meeting tab can be recorded through the extension.</li>
-<li>Your voice in another call stays out: if you're unmuted in a Teams or Zoom call that PalMeet isn't recording, a meeting that can't report its mute state doesn't get your mic. Give PalMeet Accessibility access so it can read Teams' mute button.</li>
-<li>Clear banner while Chrome waits for the one click on the PalMeet icon (or ⌥⇧R), and Chrome brings the meeting tab forward.</li>
-<li>Updates now wait until your recordings finish before restarting PalMeet.</li>
-</ul>
-]]></description>
-            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.2.zip" length="15013681" type="application/octet-stream" sparkle:edSignature="zhmTs4KCIaix0L2iDsHhF3TF6JmuNhMtvGK1pUf3UfUUIzKL9RyekTjwE7QsEnHbuSZUKX1h5siMCwzNBtvvCA=="/>
         </item>
     </channel>
 </rss>
