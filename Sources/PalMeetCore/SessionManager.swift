@@ -155,21 +155,30 @@ public final class SessionManager {
                 try? await Task.sleep(for: .seconds(1))
                 tick += 1
                 if tick.isMultiple(of: 2) { await self?.refreshDesktopMeetingStates() }
+                // The app runs for days: delete expired audio without waiting for a relaunch.
+                if tick.isMultiple(of: 6 * 3_600) { self?.applyRetentionPolicy() }
                 self?.updateMicRouting()
             }
         }
         refreshLibrary()
         applyRetentionPolicy()
-        compactLibraryScreenshots()
+        tidyLibrary()
     }
 
-    /// Meetings recorded before screenshots were compacted get the same cleanup once, one at a time in the background.
-    func compactLibraryScreenshots() {
-        guard settings.compactScreenshots else { return }
-        let pending = library.filter { $0.metadata.status == .ready && $0.metadata.screenshotsCompacted != true }
+    /// Meetings recorded before screenshots were compacted and audio compressed get the same treatment once,
+    /// one at a time in the background.
+    func tidyLibrary() {
+        let pending = library.filter { session in
+            session.metadata.status == .ready
+                && ((settings.compactScreenshots && session.metadata.screenshotsCompacted != true)
+                    || (settings.audioStorage != .original && session.metadata.audioCompressed != true))
+        }
         guard !pending.isEmpty else { return }
         Task(priority: .background) {
-            for session in pending { await session.compactScreenshots() }
+            for session in pending {
+                await session.compactScreenshots()
+                await session.compressAudio()
+            }
         }
     }
 

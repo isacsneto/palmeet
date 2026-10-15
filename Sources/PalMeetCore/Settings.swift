@@ -85,6 +85,27 @@ public struct AppearanceSettings: Codable, Sendable, Equatable {
     }
 }
 
+/// How a meeting's audio is kept after processing. The transcript, speakers and voices always come from the
+/// original recording; this only affects listening and transcribing the meeting again later.
+public enum AudioStorage: String, Codable, Sendable, CaseIterable, Identifiable {
+    /// The 16-bit recording as is.
+    case original
+    /// Apple Lossless: about half the size, identical audio.
+    case lossless
+    /// AAC 48 kbit/s: about 6× smaller. Transcribing again can differ slightly (≈3% of words on real meetings).
+    case compressed
+
+    public var id: String { rawValue }
+
+    public var displayName: String {
+        switch self {
+        case .original: "Original (largest)"
+        case .lossless: "Lossless (≈2× smaller)"
+        case .compressed: "Compressed (≈6× smaller)"
+        }
+    }
+}
+
 public struct AppSettings: Codable, Sendable, Equatable {
     public var profile = UserProfile()
     /// Model choices per provider kind (keyed by `LLMProviderKind.rawValue`).
@@ -114,6 +135,8 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var meetingPageDiagnostics = true
     /// After a meeting, delete screenshots that repeat another one and save the rest smaller.
     public var compactScreenshots = true
+    /// How a meeting's audio is kept once it has been transcribed and summarized.
+    public var audioStorage: AudioStorage = .compressed
     public var storageRoot: String?
     public var hasCompletedOnboarding = false
 
@@ -168,6 +191,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
         recognizeVoices = try c.decodeIfPresent(Bool.self, forKey: .recognizeVoices) ?? d.recognizeVoices
         meetingPageDiagnostics = try c.decodeIfPresent(Bool.self, forKey: .meetingPageDiagnostics) ?? d.meetingPageDiagnostics
         compactScreenshots = try c.decodeIfPresent(Bool.self, forKey: .compactScreenshots) ?? d.compactScreenshots
+        audioStorage = (try? c.decodeIfPresent(AudioStorage.self, forKey: .audioStorage)) ?? d.audioStorage
         storageRoot = try c.decodeIfPresent(String.self, forKey: .storageRoot)
         hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? d.hasCompletedOnboarding
     }

@@ -39,7 +39,7 @@ public enum RecordingImporter {
         guard let audioTrack = try await asset.loadTracks(withMediaType: .audio).first else { throw ImportError.noAudio }
 
         try folder.createDirectories()
-        try await extractAudio(asset: asset, track: audioTrack, to: folder.audioURL(for: .them))
+        try await extractAudio(asset: asset, track: audioTrack, to: folder.recordingURL(for: .them))
 
         var screenshots: [ScreenshotRecord] = []
         if try await !asset.loadTracks(withMediaType: .video).isEmpty {

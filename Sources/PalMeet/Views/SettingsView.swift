@@ -388,6 +388,11 @@ private struct PrivacySettingsView: View {
             }
             Section("Recordings") {
                 Toggle("Keep mic audio that was routed to another meeting", isOn: setting(app, \.privacy.keepUnroutedMicAudio))
+                Picker("Keep meeting audio as", selection: setting(app, \.audioStorage)) {
+                    ForEach(AudioStorage.allCases) { Text($0.displayName).tag($0) }
+                }
+                Text("Applied once a meeting is transcribed and summarized (those always use the original). Compressed audio sounds fine; transcribing a meeting again from it can come out slightly different.")
+                    .font(.caption).foregroundStyle(.secondary)
                 Toggle("Remove repeated screenshots after a meeting", isOn: setting(app, \.compactScreenshots))
                 Text("Deletes screenshots that show the same screen and text as one that's kept, and saves the rest smaller. Screenshots you marked and the ones in the summary always stay.")
                     .font(.caption).foregroundStyle(.secondary)

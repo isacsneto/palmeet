@@ -128,6 +128,8 @@ public struct SessionMetadata: Codable, Sendable, Identifiable, Equatable {
     public var appVersion: String
     /// Repeated screenshots were removed and the rest recompressed (done once per meeting).
     public var screenshotsCompacted: Bool?
+    /// The audio tracks were re-saved as AAC (.m4a) after processing.
+    public var audioCompressed: Bool?
 
     public init(
         id: SessionID = SessionID(),

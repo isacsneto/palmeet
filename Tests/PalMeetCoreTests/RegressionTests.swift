@@ -166,6 +166,57 @@ struct ReviewRegressionTests {
         #expect(kept.metadata.screenshotsCompacted == nil, "turned off: screenshots are left alone")
     }
 
+    @Test func audioIsCompressedAfterTheMeetingAndStillTranscribes() async throws {
+        let h = Harness()
+        defer { h.cleanup() }
+        let remote = FakeRemoteAudio()
+        let session = try await h.start(remote: remote, includeMic: true)
+        remote.push(Voice.alpha.samples(seconds: 6) + silence(1), at: 0.2)
+        await h.mic.pushRealtime(Voice.bravo.samples(seconds: 2) + silence(0.5))
+        try await Task.sleep(for: .milliseconds(300))
+        let recordedSeconds = AudioRedaction.duration(of: session.folder.recordingURL(for: .them))
+        let recordedBytes = try FileManager.default.attributesOfItem(atPath: session.folder.recordingURL(for: .them).path)[.size] as? Int ?? 0
+        await h.manager.stop(session)
+
+        #expect(session.metadata.audioCompressed == true)
+        for track in [Track.them, .me] {
+            #expect(!FileManager.default.fileExists(atPath: session.folder.recordingURL(for: track).path), "\(track) original removed")
+            #expect(session.folder.audioURL(for: track) == session.folder.compressedAudioURL(for: track))
+        }
+        let compressed = session.folder.audioURL(for: .them)
+        let bytes = try FileManager.default.attributesOfItem(atPath: compressed.path)[.size] as? Int ?? 0
+        #expect(bytes * 4 < recordedBytes, "\(recordedBytes) → \(bytes) bytes")
+        #expect(abs(AudioRedaction.duration(of: compressed) - recordedSeconds) < 0.1)
+
+        // Transcribing again reads the compressed tracks.
+        await session.reprocess()
+        #expect(session.transcript?.plainText().contains("alpha") == true)
+        #expect(session.transcript?.plainText().contains("bravo") == true)
+    }
+
+    @Test func audioStorageSetting() async throws {
+        for storage in [AudioStorage.original, .lossless] {
+            let h = Harness { $0.audioStorage = storage }
+            defer { h.cleanup() }
+            let remote = FakeRemoteAudio()
+            let session = try await h.start(remote: remote, includeMic: false)
+            let voice = Voice.alpha.samples(seconds: 3)
+            remote.push(voice, at: 0.2)
+            try await Task.sleep(for: .milliseconds(300))
+            let recorded = try readMono(session.folder.recordingURL(for: .them))
+            await h.manager.stop(session)
+            let url = session.folder.audioURL(for: .them)
+            if storage == .original {
+                #expect(url.pathExtension == "caf" && session.metadata.audioCompressed == nil)
+            } else {
+                #expect(url.pathExtension == "m4a" && session.metadata.audioCompressed == true)
+                let decoded = try readMono(url)
+                #expect(decoded.count == recorded.count)
+                #expect(zip(decoded, recorded).allSatisfy { abs($0 - $1) < 1e-4 }, "lossless: same samples")
+            }
+        }
+    }
+
     @Test func libraryShowsCopilotHistoryAfterRelaunch() async throws {
         let h = Harness()
         defer { h.cleanup() }

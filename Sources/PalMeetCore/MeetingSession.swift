@@ -211,7 +211,7 @@ public final class MeetingSession: Identifiable {
         do {
             try folder.createDirectories()
             if let remoteAudio {
-                let writer = try AudioTrackWriter(url: folder.audioURL(for: .them), gapTolerance: remoteAudio.gapTolerance)
+                let writer = try AudioTrackWriter(url: folder.recordingURL(for: .them), gapTolerance: remoteAudio.gapTolerance)
                 themWriter = writer
                 let clock = self.clock
                 try await remoteAudio.start { samples, time in
@@ -254,7 +254,7 @@ public final class MeetingSession: Identifiable {
 
     private func startMicrophone() {
         do {
-            let writer = try AudioTrackWriter(url: folder.audioURL(for: .me), gapTolerance: 0.2)
+            let writer = try AudioTrackWriter(url: folder.recordingURL(for: .me), gapTolerance: 0.2)
             meWriter = writer
             let stream = try services.microphone.subscribe()
             let clock = self.clock
@@ -686,9 +686,10 @@ public final class MeetingSession: Identifiable {
             transcript = finalTranscript
             try services.store.save(finalTranscript, metadata: metadata, in: folder)
 
-            if !settings.privacy.keepUnroutedMicAudio, metadata.includesMicrophone {
+            // Compressed audio was already redacted before it was compressed.
+            if !settings.privacy.keepUnroutedMicAudio, metadata.includesMicrophone, metadata.audioCompressed != true {
                 stage = .transcribing("Removing mic audio routed to other meetings…")
-                let url = folder.audioURL(for: .me)
+                let url = folder.recordingURL(for: .me)
                 let routing = metadata.micRouting
                 try? await Task.detached { try AudioRedaction.silence(url, keeping: routing) }.value
             }
@@ -698,6 +699,36 @@ public final class MeetingSession: Identifiable {
         }
         await summarize(using: settings.workingProvider(settings.summaryProvider, ready: services.providers.isReady), proofread: settings.aiTranscriptCorrection)
         await compactScreenshots()
+        await compressAudio()
+    }
+
+    /// Re-saves the audio tracks smaller (Settings → audio storage), once per meeting, after everything that
+    /// reads the original recording.
+    func compressAudio() async {
+        guard let format = AudioCompression.format(for: settings().audioStorage), metadata.audioCompressed != true else { return }
+        switch stage {
+        case .ready, .failed: break
+        default: return
+        }
+        let folder = folder
+        let saved = await Task.detached(priority: .utility) { () -> (Int64, Int64)? in
+            var before: Int64 = 0, after: Int64 = 0
+            for track in [Track.them, .me] {
+                let source = folder.recordingURL(for: track)
+                guard FileManager.default.fileExists(atPath: source.path) else { continue }
+                guard let sizes = try? AudioCompression.compress(source, to: folder.compressedAudioURL(for: track), format: format) else { return nil }
+                before += sizes.before
+                after += sizes.after
+            }
+            return (before, after)
+        }.value
+        guard let saved else {
+            logger.error("Audio compression failed; the original recording was kept.")
+            return
+        }
+        metadata.audioCompressed = true
+        persistMetadata()
+        logger.info("Audio compressed: \(saved.0 / 1024) KB → \(saved.1 / 1024) KB")
     }
 
     /// Deletes screenshots that repeat another one and saves the rest smaller, once per meeting, after the summary

@@ -33,8 +33,22 @@ public struct SessionFolder: Sendable, Hashable {
     public var screenshotsDirectory: URL { url.appending(path: "screenshots", directoryHint: .isDirectory) }
     public var screenshotIndexURL: URL { screenshotsDirectory.appending(path: "index.json") }
 
+    /// The track's audio: the recording (.caf), or its compressed copy (.m4a) once the meeting was processed.
     public func audioURL(for track: Track) -> URL {
+        let recording = recordingURL(for: track)
+        if FileManager.default.fileExists(atPath: recording.path) { return recording }
+        let compressed = compressedAudioURL(for: track)
+        return FileManager.default.fileExists(atPath: compressed.path) ? compressed : recording
+    }
+
+    /// Where the track is recorded (uncompressed, written while the meeting runs).
+    public func recordingURL(for track: Track) -> URL {
         audioDirectory.appending(path: "\(track.rawValue).caf")
+    }
+
+    /// The track compressed to AAC after the meeting.
+    public func compressedAudioURL(for track: Track) -> URL {
+        audioDirectory.appending(path: "\(track.rawValue).m4a")
     }
 
     /// "screenshots/0007_00-12-00.jpg"
