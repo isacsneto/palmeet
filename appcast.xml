@@ -3,6 +3,20 @@
     <channel>
         <title>PalMeet</title>
         <item>
+            <title>0.2.1</title>
+            <pubDate>Thu, 15 Oct 2026 12:06:56 -0300</pubDate>
+            <sparkle:version>261015120620</sparkle:version>
+            <sparkle:shortVersionString>0.2.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<h2>PalMeet 0.2.1</h2><ul>
+<li>The copilot, summaries and spelling fixes now use an AI provider that works. If the one you picked has no API key (or its CLI is logged out), PalMeet uses your Claude Code login, or another working provider, and says so in Settings → AI Providers.</li>
+<li>New **Meeting context** box in the live view: type the agenda, ticket, who's who, names and terms at any time. The copilot uses it immediately; the summary and spelling fixes use it afterwards. Saved with the meeting as context.md.</li>
+</ul>
+]]></description>
+            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.1.zip" length="14993857" type="application/octet-stream" sparkle:edSignature="fmqXtQr9B73l3cJZ6DgAo/vIEXyjRFvi9sJAD1k6yugmn3V+b67vUzCsw2rZDthQQYGI990fy3e3/mkoGyiPAA=="/>
+        </item>
+        <item>
             <title>0.2.0</title>
             <pubDate>Wed, 14 Oct 2026 12:17:41 -0300</pubDate>
             <sparkle:version>261014121618</sparkle:version>
@@ -33,21 +47,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.1.9.zip" length="14804356" type="application/octet-stream" sparkle:edSignature="H3L9gLvsKXLtSsffw7/NK/0VpemjhEGi4MXkPZtE98jChdxLq6fDJAZZLzby4OtFcZE1TJnHRMsjY7jxUgFhBQ=="/>
-        </item>
-        <item>
-            <title>0.1.8</title>
-            <pubDate>Tue, 13 Oct 2026 18:47:34 -0300</pubDate>
-            <sparkle:version>261013184729</sparkle:version>
-            <sparkle:shortVersionString>0.1.8</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description><![CDATA[<h2>PalMeet 0.1.8</h2><ul>
-<li>New: Import a recording (video or audio): toolbar Import… or menu bar → Import a recording…</li>
-<li>Better speaker names: no more names taken from on-screen app text</li>
-<li>Fix: imported/recorded meetings no longer list you as a participant when you didn't speak</li>
-</ul>
-]]></description>
-            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.1.8.zip" length="14744369" type="application/octet-stream" sparkle:edSignature="g89x+iix05I6igUHR3osBAnAJ9AjLJPVitOlXoDI4Sjxr8vsUqe8KHXIpiFzAxCP4cXgfL90qXs0XANFa9ioCg=="/>
         </item>
     </channel>
 </rss>
