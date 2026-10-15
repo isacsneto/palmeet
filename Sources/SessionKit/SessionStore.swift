@@ -21,6 +21,8 @@ public struct SessionFolder: Sendable, Hashable {
     public var summaryMarkdownURL: URL { url.appending(path: "summary.md") }
     public var copilotURL: URL { url.appending(path: "copilot.json") }
     public var notesURL: URL { url.appending(path: "notes.json") }
+    /// Context the user typed for the meeting (agenda, ticket, who's who); used by the copilot and the summary.
+    public var contextURL: URL { url.appending(path: "context.md") }
     /// Who the meeting app showed as talking (captions, speaking indicators).
     public var meetingSpeakersURL: URL { url.appending(path: "meeting-speakers.json") }
     /// Voiceprint of each remote speaker, used to learn voices when speakers are named.

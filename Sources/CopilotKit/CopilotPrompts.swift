@@ -27,7 +27,7 @@ enum CopilotPrompts {
         """
         let notes = prepNotes.trimmingCharacters(in: .whitespacesAndNewlines)
         if !notes.isEmpty {
-            prompt += "\n\nPreparation notes from the user (ticket, spec, agenda):\n\(notes.prefix(12_000))"
+            prompt += "\n\nContext from the user for this meeting (agenda, ticket, spec, who's who; they may add to it as the meeting goes):\n\(notes.prefix(12_000))"
         }
         return prompt
     }

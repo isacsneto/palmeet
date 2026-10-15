@@ -289,6 +289,46 @@ struct SessionCopilotTests {
         #expect(saved.first?.status == .pinned && saved.first?.feedback == 1)
     }
 
+    @Test func copilotUsesTheLoginWhenNoAPIKeyIsSaved() async throws {
+        let h = Harness(apiKeys: [])
+        defer { h.cleanup() }
+        #expect(h.manager.settings.copilotProvider == .anthropicAPI && h.manager.settings.summaryProvider == .claudeCLI)
+        #expect(h.manager.workingCopilotProvider == .claudeCLI, "the chosen login, even before it's checked")
+        let session = try await h.start(includeMic: false)
+        session.setCopilot(enabled: true)
+        #expect(h.requestedProviders.withLock { $0 } == [.claudeCLI])
+        #expect(session.copilotConfiguration().model == "haiku", "the login provider's fast model")
+        session.setCopilot(enabled: false)
+        await h.manager.stop(session)
+        #expect(h.requestedProviders.withLock { $0 }.last == .claudeCLI, "and so does the summary")
+    }
+
+    @Test func summariesUseAProviderThatWorks() async throws {
+        let h = Harness(settings: { $0.summaryProvider = .codexCLI }, apiKeys: [])
+        defer { h.cleanup() }
+        h.manager.services.providers.record(.codexCLI, ready: false)
+        h.manager.services.providers.record(.claudeCLI, ready: true)
+        #expect(h.manager.workingSummaryProvider == .claudeCLI)
+        let session = try await h.start(includeMic: false)
+        await h.manager.stop(session)
+        #expect(h.requestedProviders.withLock { $0 }.last == .claudeCLI)
+        #expect(session.metadata.summaryProvider == LLMProviderKind.claudeCLI.rawValue)
+    }
+
+    @Test func providerFallback() {
+        var settings = AppSettings()
+        settings.summaryProvider = .codexCLI
+        settings.copilotProvider = .anthropicAPI
+        let none: (LLMProviderKind) -> Bool? = { $0.needsAPIKey ? false : nil }
+        #expect(settings.workingProvider(.anthropicAPI) { _ in true } == .anthropicAPI, "a working choice is used")
+        #expect(settings.workingProvider(.codexCLI, ready: none) == .codexCLI, "unchecked CLIs are trusted")
+        #expect(settings.workingProvider(.anthropicAPI, ready: none) == .codexCLI, "no key: the other choice, unchecked")
+        #expect(settings.workingProvider(.anthropicAPI) { $0 == .geminiCLI ? true : ($0.needsAPIKey ? false : nil) } == .geminiCLI,
+                "a provider known to work beats an unchecked one")
+        #expect(settings.workingProvider(.codexCLI) { $0 == .openAIAPI } == .openAIAPI)
+        #expect(settings.workingProvider(.anthropicAPI) { _ in false } == .anthropicAPI, "nothing works: the choice, whose error says what to set up")
+    }
+
     @Test func helpNowAndAutoEnable() async throws {
         let h = Harness { $0.copilot.autoEnableModes = [.grooming] }
         defer { h.cleanup() }

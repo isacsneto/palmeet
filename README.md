@@ -8,6 +8,7 @@ Native macOS app (Swift 6 / SwiftUI, macOS 15+) that records meetings from any a
 - Writes a **Markdown summary** with Claude, OpenAI/Codex, Gemini, Cursor or a local model, using an API key or your existing CLI login.
 - Can record **several meetings at once**, each fully isolated.
 - Has a **live copilot** that suggests what to say and ask. It is off unless you turn it on.
+- Takes **meeting context** while you record (agenda, ticket, who's who, terms). The copilot, the summary and the spelling fixes use it.
 - **Hotkeys** for everything; windows are **hidden from screen sharing** and have **adjustable transparency**.
 
 See [PLAN.md](PLAN.md) for the design.
@@ -58,6 +59,7 @@ swift scripts/make-icon.swift     # regenerate the app icon (Resources/Assets.xc
    - **CLIs** reuse your login: `claude`, `codex`, `gemini`, `cursor-agent`.
    - **APIs** need a key, which is stored in the Keychain.
    - The live copilot is fastest with an API provider and a fast model, e.g. `claude-haiku-5-5`.
+   - If the provider you picked doesn't work (no key saved, CLI not installed or logged out), PalMeet uses one that does and says so in Settings. You only see a "set up" message when no provider works.
 3. **Speech models.** The first transcription downloads the speech models (about 600 MB ASR + diarization) to `~/Library/Application Support/FluidAudio`.
 
 ## Recording two meetings in the same browser (Chrome profiles)
@@ -97,6 +99,7 @@ Each meeting is saved to `~/Documents/PalMeet/<date time> – <title>/`:
 | `audio/them.caf`, `audio/me.caf` | The two audio tracks (16 kHz) |
 | `screenshots/*.jpg`, `screenshots/index.json` | Screenshots with their OCR text |
 | `copilot.json`, `notes.json`, `session.json` | Copilot suggestions, your notes, session metadata |
+| `context.md` | The meeting context you typed (agenda, ticket, who's who); used by the copilot, the summary and spelling fixes |
 | `meeting-speakers.json` | Captions and "is speaking" indicators the meeting page showed (browser meetings) |
 | `speaker-voices.json` | Voiceprint of each remote speaker (used to learn voices when you name speakers) |
 | `page-diagnostics.jsonl` | Which meeting-page elements changed while recording (helps add speaker detection for new layouts) |

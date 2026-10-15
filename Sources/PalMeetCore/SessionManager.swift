@@ -101,7 +101,8 @@ public final class SessionManager {
             voices: VoiceProfileStore(),
             makeProvider: { kind in
                 LLMProviderFactory.make(config: box.value.providerConfig(kind), secrets: secrets)
-            }
+            },
+            providers: ProviderReadiness(hasAPIKey: { secrets.apiKey(for: $0) != nil })
         )
         self.init(settingsStore: settingsStore, secrets: secrets, settingsBox: box, services: services, bridge: BrowserBridgeServer())
     }
@@ -121,6 +122,7 @@ public final class SessionManager {
 
     public func start() {
         bridge.setPageDiagnostics(settings.meetingPageDiagnostics)
+        Task { await refreshProviders() }
         do {
             try bridge.start()
             bridgePort = bridge.port
@@ -183,6 +185,34 @@ public final class SessionManager {
 
     public func provider(_ kind: LLMProviderKind) -> any LLMProvider {
         services.makeProvider(kind)
+    }
+
+    /// Last check of each provider (Settings shows it; failures make PalMeet use one that works).
+    public private(set) var providerStatus: [LLMProviderKind: LLMAvailability] = [:]
+
+    /// Checks every provider (CLI installed and logged in, API key saved, local server up), all at once.
+    public func refreshProviders() async {
+        let results = await withTaskGroup(of: (LLMProviderKind, LLMAvailability).self) { group in
+            for kind in LLMProviderKind.allCases {
+                let provider = services.makeProvider(kind)
+                group.addTask { (kind, await provider.checkAvailability()) }
+            }
+            var results: [LLMProviderKind: LLMAvailability] = [:]
+            for await (kind, status) in group { results[kind] = status }
+            return results
+        }
+        for (kind, status) in results { services.providers.record(kind, ready: status.isReady) }
+        providerStatus = results
+    }
+
+    /// The provider summaries (and proofreading) will use: the chosen one, or one that works.
+    public var workingSummaryProvider: LLMProviderKind {
+        settings.workingProvider(settings.summaryProvider, ready: services.providers.isReady)
+    }
+
+    /// The provider the live copilot will use: the chosen one, or one that works.
+    public var workingCopilotProvider: LLMProviderKind {
+        settings.workingProvider(settings.copilotProvider, ready: services.providers.isReady)
     }
 
     public var store: SessionStore { services.store }

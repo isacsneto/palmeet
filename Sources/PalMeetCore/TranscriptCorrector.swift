@@ -19,7 +19,7 @@ struct TranscriptCorrector: Sendable {
     /// Longer transcripts are proofread in pieces of about this many characters.
     var chunkCharacters = 60_000
 
-    func corrections(transcript: Transcript, glossary: [String], screenNames: [String], title: String) async throws -> [Fix] {
+    func corrections(transcript: Transcript, glossary: [String], screenNames: [String], title: String, context userContext: String = "") async throws -> [Fix] {
         let lines = transcript.segments.filter { !$0.isEdited }.map { segment in
             "[\(Timecode.format(segment.start))] \(transcript.displayName(for: segment.speakerID)): \(segment.text)"
         }
@@ -28,6 +28,8 @@ struct TranscriptCorrector: Sendable {
         let names = transcript.speakers.map(\.displayName).filter { !$0.hasPrefix("Speaker ") }
         if !names.isEmpty { context += "\nSpeakers: \(names.joined(separator: ", "))" }
         if !glossary.isEmpty { context += "\nGlossary (correct spellings): \(glossary.joined(separator: ", "))" }
+        let userContext = userContext.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !userContext.isEmpty { context += "\nContext the user gave for this meeting (names and terms here are spelled correctly):\n\(userContext.prefix(6_000))" }
         if !screenNames.isEmpty { context += "\nNames seen on screen (may include UI text): \(screenNames.prefix(40).joined(separator: ", "))" }
 
         var fixes: [Fix] = []

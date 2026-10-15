@@ -117,6 +117,39 @@ struct ReviewRegressionTests {
         await h.manager.stop(session)
     }
 
+    @Test func contextTypedDuringTheMeetingReachesCopilotSummaryAndProofreading() async throws {
+        let h = Harness()
+        defer { h.cleanup() }
+        let remote = FakeRemoteAudio()
+        let session = try await h.start(remote: remote, includeMic: false)
+        remote.push(Voice.alpha.samples(seconds: 2) + silence(1), at: 0.2)
+        session.context = "Agenda: PAY-142 refund flow. Attendees: Joana Prates (PM)."
+        session.setCopilot(enabled: true)
+        session.copilotHelpNow()
+        #expect(await waitUntil { h.llm.streamCalls.count > 0 })
+        #expect(h.llm.lastCopilotSystem.contains("PAY-142"))
+
+        // Added to while the meeting runs: the next copilot call sees it.
+        session.context += "\nDecision needed: keep partial refunds?"
+        try await Task.sleep(for: .milliseconds(100))
+        let calls = h.llm.streamCalls.count
+        session.copilotHelpNow()
+        #expect(await waitUntil { h.llm.streamCalls.count > calls })
+        #expect(h.llm.lastCopilotSystem.contains("partial refunds"))
+        #expect(await waitUntil { !session.liveSegments.isEmpty })
+
+        await h.manager.stop(session)
+        #expect(h.llm.lastSummaryPrompt.contains("Joana Prates"))
+        #expect(h.llm.lastProofreadPrompt.contains("Joana Prates"))
+        let saved = try String(contentsOf: session.folder.contextURL, encoding: .utf8)
+        #expect(saved.contains("PAY-142") && saved.contains("partial refunds"))
+
+        let relaunched = Harness(root: h.root)
+        relaunched.manager.refreshLibrary()
+        let loaded = try #require(relaunched.manager.library.first { $0.id == session.id })
+        #expect(loaded.context.contains("partial refunds"), "regenerating later uses it too")
+    }
+
     @Test func libraryShowsCopilotHistoryAfterRelaunch() async throws {
         let h = Harness()
         defer { h.cleanup() }

@@ -113,6 +113,15 @@ struct LiveSessionView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
+                GroupBox("Meeting context") {
+                    TextEditor(text: $session.context)
+                        .font(.callout)
+                        .frame(minHeight: 110)
+                        .scrollContentBackground(.hidden)
+                    Text("Agenda, ticket, who's who, names and terms. Add to it anytime. The copilot uses it while on; the summary and spelling fixes use it after. Saved with the meeting.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+
                 GroupBox("Quick note") {
                     HStack {
                         TextField("Timestamped note…", text: $note)
@@ -122,15 +131,6 @@ struct LiveSessionView: View {
                     ForEach(session.notes.reversed()) { note in
                         Text("[\(Timecode.format(note.offset))] \(note.text)").font(.caption).frame(maxWidth: .infinity, alignment: .leading)
                     }
-                }
-
-                GroupBox("Prep notes for the copilot") {
-                    TextEditor(text: $session.prepNotes)
-                        .font(.callout)
-                        .frame(minHeight: 90)
-                        .scrollContentBackground(.hidden)
-                    Text("Paste the ticket, spec or agenda. Only used while the copilot is on.")
-                        .font(.caption2).foregroundStyle(.secondary)
                 }
 
                 GroupBox("Screenshots (\(session.screenshots.count))") {

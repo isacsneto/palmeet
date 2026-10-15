@@ -66,7 +66,7 @@ struct ReviewView: View {
                 }
                 Divider()
                 Button("Fix misheard words, then regenerate") {
-                    Task { await session.summarize(using: app.manager.settings.summaryProvider, proofread: true) }
+                    Task { await session.summarize(using: app.manager.workingSummaryProvider, proofread: true) }
                 }
             } label: {
                 Label("Regenerate summary", systemImage: "sparkles")

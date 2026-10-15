@@ -171,8 +171,6 @@ private struct GeneralSettings: View {
 
 private struct ProviderSettings: View {
     @Environment(AppState.self) private var app
-    @State private var availability: [LLMProviderKind: String] = [:]
-
     var body: some View {
         Form {
             Section("Which AI to use") {
@@ -182,24 +180,39 @@ private struct ProviderSettings: View {
                 Picker("Live copilot", selection: setting(app, \.copilotProvider)) {
                     ForEach(LLMProviderKind.allCases) { Text($0.displayName + ($0.isCLI ? " (slower)" : "")).tag($0) }
                 }
+                substitution("Summaries", chosen: app.manager.settings.summaryProvider, used: app.manager.workingSummaryProvider)
+                substitution("The copilot", chosen: app.manager.settings.copilotProvider, used: app.manager.workingCopilotProvider)
                 Text("CLI options reuse your existing login (`claude`, `codex`, `gemini`, `cursor-agent`), so no API key is needed. API providers are faster for the live copilot.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             ForEach(LLMProviderKind.allCases) { kind in
                 Section(kind.displayName) {
-                    ProviderRow(kind: kind, status: availability[kind]) { status in availability[kind] = status }
+                    ProviderRow(kind: kind)
                 }
             }
         }
         .formStyle(.grouped)
+        .task { await app.manager.refreshProviders() }
+    }
+
+    /// Says when the chosen provider doesn't work and which one PalMeet uses instead (or that nothing works yet).
+    @ViewBuilder
+    private func substitution(_ feature: String, chosen: LLMProviderKind, used: LLMProviderKind) -> some View {
+        if let status = app.manager.providerStatus[chosen], !status.isReady {
+            Label(
+                used == chosen
+                    ? "\(chosen.displayName) isn't working: \(status.userMessage) No other AI provider works either."
+                    : "\(feature) use \(used.displayName), because \(chosen.displayName) isn't set up (\(status.userMessage))",
+                systemImage: used == chosen ? "exclamationmark.triangle" : "arrow.triangle.swap"
+            )
+            .font(.caption).foregroundStyle(used == chosen ? .orange : .secondary)
+        }
     }
 }
 
 private struct ProviderRow: View {
     @Environment(AppState.self) private var app
     let kind: LLMProviderKind
-    let status: String?
-    let report: (String) -> Void
     @State private var apiKey = ""
     @State private var checking = false
 
@@ -213,10 +226,14 @@ private struct ProviderRow: View {
                 Button("Save") {
                     try? app.manager.secrets.setSecret(apiKey.trimmingCharacters(in: .whitespacesAndNewlines), for: kind.secretAccount)
                     apiKey = ""
+                    Task { await app.manager.refreshProviders() }
                 }
                 .disabled(apiKey.isEmpty)
                 if hasKey {
-                    Button("Remove") { try? app.manager.secrets.deleteSecret(for: kind.secretAccount) }
+                    Button("Remove") {
+                        try? app.manager.secrets.deleteSecret(for: kind.secretAccount)
+                        Task { await app.manager.refreshProviders() }
+                    }
                 }
             }
         }
@@ -236,13 +253,14 @@ private struct ProviderRow: View {
             Button(checking ? "Checking…" : "Check") {
                 checking = true
                 Task {
-                    let result = await app.manager.provider(kind).checkAvailability()
-                    report(result.isReady ? "✅ Ready" : "⚠️ \(result.userMessage)")
+                    await app.manager.refreshProviders()
                     checking = false
                 }
             }
             .disabled(checking)
-            if let status { Text(status).font(.caption) }
+            if let status = app.manager.providerStatus[kind] {
+                Text(status.isReady ? "✅ Ready" : "⚠️ \(status.userMessage)").font(.caption)
+            }
         }
     }
 

@@ -26,13 +26,14 @@ struct Summarizer: Sendable {
         screenshots: [ScreenshotRecord],
         notes: [SessionNote],
         folder: SessionFolder,
-        glossary: [String]
+        glossary: [String],
+        context: String = ""
     ) async throws -> Output {
         let lines = transcriptLines(transcript)
         if lines.count <= singlePassLimit {
             return try await finalPass(
                 metadata: metadata, transcript: transcript, body: "Transcript:\n" + lines,
-                screenshots: screenshots, notes: notes, folder: folder, glossary: glossary
+                screenshots: screenshots, notes: notes, folder: folder, glossary: glossary, context: context
             )
         }
 
@@ -56,7 +57,7 @@ struct Summarizer: Sendable {
             partials.append("Notes for \(Timecode.format(range.lowerBound))–\(Timecode.format(range.upperBound)):\n\(response.text)")
         }
         let body = "The meeting was long, so here are chronological notes covering the whole transcript:\n\n" + partials.joined(separator: "\n\n")
-        return try await finalPass(metadata: metadata, transcript: transcript, body: body, screenshots: screenshots, notes: notes, folder: folder, glossary: glossary)
+        return try await finalPass(metadata: metadata, transcript: transcript, body: body, screenshots: screenshots, notes: notes, folder: folder, glossary: glossary, context: context)
     }
 
     // MARK: - Prompting
@@ -68,7 +69,8 @@ struct Summarizer: Sendable {
         screenshots: [ScreenshotRecord],
         notes: [SessionNote],
         folder: SessionFolder,
-        glossary: [String]
+        glossary: [String],
+        context: String
     ) async throws -> Output {
         var header = """
         Meeting: \(metadata.title)
@@ -91,6 +93,10 @@ struct Summarizer: Sendable {
             header += "\nWeak screen hints (use only if the conversation agrees): " + hints.map { "\($0.speakerID) often talks while “\($0.name)” is on screen" }.joined(separator: "; ")
         }
         if !glossary.isEmpty { header += "\nGlossary (correct spellings): \(glossary.joined(separator: ", "))" }
+        let context = context.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !context.isEmpty {
+            header += "\nContext the user gave for this meeting (agenda, ticket, who's who, terms; trust it for names and spellings):\n\(context.prefix(20_000))"
+        }
         if !notes.isEmpty {
             header += "\nUser notes taken during the meeting:\n" + notes.map { "[\(Timecode.format($0.offset))] \($0.text)" }.joined(separator: "\n")
         }

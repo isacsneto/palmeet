@@ -3,6 +3,7 @@ import BrowserBridge
 import CaptureKit
 import Foundation
 import LLMKit
+import os
 import SessionKit
 import TranscriptKit
 @testable import PalMeetCore
@@ -262,6 +263,8 @@ final class FakeLLM: LLMProvider, @unchecked Sendable {
 
     var lastSummaryPrompt: String { lock.withLock { _lastSummaryPrompt } }
     var lastProofreadPrompt: String { lock.withLock { _lastProofreadPrompt } }
+    private var _lastCopilotSystem = ""
+    var lastCopilotSystem: String { lock.withLock { _lastCopilotSystem } }
 
     func complete(_ request: LLMRequest) async throws -> LLMResponse {
         if request.system == TranscriptCorrector.systemPrompt {
@@ -286,6 +289,7 @@ final class FakeLLM: LLMProvider, @unchecked Sendable {
 
     func stream(_ request: LLMRequest) -> AsyncThrowingStream<String, Error> {
         streamCalls.increment()
+        lock.withLock { _lastCopilotSystem = request.system ?? "" }
         let reply = copilotReply
         return AsyncThrowingStream { continuation in
             continuation.yield(reply)
@@ -305,6 +309,8 @@ struct Harness {
     let mic: FakeMicrophone
     let llm: FakeLLM
     let asr: FakeASR
+    /// Provider kinds the session asked for, in order.
+    let requestedProviders = OSAllocatedUnfairLock<[LLMProviderKind]>(initialState: [])
 
     init(
         root existingRoot: URL? = nil,
@@ -314,7 +320,8 @@ struct Harness {
         diarizer realDiarizer: (any Diarizer)? = nil,
         provider realProvider: (any LLMProvider)? = nil,
         bridge customBridge: BrowserBridgeServer? = nil,
-        microphoneAllowed micAllowed: Bool = true
+        microphoneAllowed micAllowed: Bool = true,
+        apiKeys: Set<LLMProviderKind>? = nil
     ) {
         root = existingRoot ?? FileManager.default.temporaryDirectory.appending(path: "palmeet-core-\(UUID().uuidString)")
         var settings = AppSettings()
@@ -336,7 +343,11 @@ struct Harness {
             diarizer: realDiarizer ?? FakeDiarizer(),
             scheduler: ASRScheduler(),
             voices: VoiceProfileStore(url: root.appending(path: "Voices.json")),
-            makeProvider: { _ in realProvider ?? llm },
+            makeProvider: { [requestedProviders] kind in
+                requestedProviders.withLock { $0.append(kind) }
+                return realProvider ?? llm
+            },
+            providers: ProviderReadiness(hasAPIKey: { kind in apiKeys?.contains(kind) ?? true }),
             ensureMicrophoneAccess: { micAllowed }
         )
         let bridge = customBridge ?? BrowserBridgeServer(configuration: .init(portCandidates: [0], bridgeInfoStore: nil, token: bridgeToken))

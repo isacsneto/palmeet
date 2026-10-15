@@ -20,6 +20,8 @@ struct SessionServices: Sendable {
     /// The library of learned voices.
     let voices: VoiceProfileStore
     let makeProvider: @Sendable (LLMProviderKind) -> any LLMProvider
+    /// Which AI providers work right now, so a provider that doesn't is swapped for one that does.
+    var providers = ProviderReadiness(hasAPIKey: { _ in true })
     /// Asks for microphone access when it hasn't been decided yet; false when denied.
     var ensureMicrophoneAccess: @Sendable () async -> Bool = {
         switch MicrophoneCapture.authorizationStatus() {
@@ -92,9 +94,16 @@ public final class MeetingSession: Identifiable {
     public private(set) var speakerTimeline = MeetingSpeakerTimeline()
     private var timelineSavedAt: Date?
     public var meetingMode: MeetingMode
-    public var prepNotes: String = "" {
-        didSet { Task { await copilotEngine?.update(configuration: copilotConfiguration()) } }
+    /// What the user tells PalMeet about this meeting (agenda, ticket, who's who, terms), editable while it's
+    /// recorded. The copilot uses it live; the summary and proofreading use it afterwards. Saved as context.md.
+    public var context: String = "" {
+        didSet {
+            guard context != oldValue else { return }
+            Task { await copilotEngine?.update(configuration: copilotConfiguration()) }
+            scheduleContextSave()
+        }
     }
+    private var contextSaveTask: Task<Void, Never>?
     public var colorIndex: Int
 
     let clock: SessionClock
@@ -149,6 +158,7 @@ public final class MeetingSession: Identifiable {
         self.summary = try? services.store.loadSummary(in: folder)
         self.screenshots = services.store.loadScreenshots(in: folder)
         self.notes = services.store.loadNotes(in: folder)
+        self.context = (try? String(contentsOf: folder.contextURL, encoding: .utf8)) ?? ""
         self.suggestions = (try? SessionStore.readJSON([Suggestion].self, from: folder.copilotURL)) ?? []
         self.speakerTimeline = (try? SessionStore.readJSON(MeetingSpeakerTimeline.self, from: folder.meetingSpeakersURL)) ?? MeetingSpeakerTimeline()
         switch metadata.status {
@@ -551,7 +561,7 @@ public final class MeetingSession: Identifiable {
             guard stage.isCapturing else { return }
             if !liveTranscriptionRunning { startLiveTranscription() }
             let settings = settings()
-            let provider = services.makeProvider(settings.copilotProvider)
+            let provider = services.makeProvider(settings.workingProvider(settings.copilotProvider, ready: services.providers.isReady))
             let engine = CopilotEngine(provider: provider, configuration: copilotConfiguration(), now: { [clock] in clock.offset() })
             copilotEngine = engine
             copilotEnabled = true
@@ -634,12 +644,12 @@ public final class MeetingSession: Identifiable {
 
     func copilotConfiguration() -> CopilotConfiguration {
         let settings = settings()
-        let providerConfig = settings.providerConfig(settings.copilotProvider)
+        let providerConfig = settings.providerConfig(settings.workingProvider(settings.copilotProvider, ready: services.providers.isReady))
         return CopilotConfiguration(
             profile: settings.profile,
             mode: meetingMode,
             playbook: settings.copilot.playbook(for: meetingMode),
-            prepNotes: prepNotes,
+            prepNotes: context,
             meetingTitle: metadata.title,
             model: providerConfig.fastModel.isEmpty ? nil : providerConfig.fastModel,
             proactiveQuestions: settings.copilot.proactiveQuestions,
@@ -682,7 +692,7 @@ public final class MeetingSession: Identifiable {
             fail("Transcription failed: \(error.localizedDescription)")
             return
         }
-        await summarize(using: settings.summaryProvider, proofread: settings.aiTranscriptCorrection)
+        await summarize(using: settings.workingProvider(settings.summaryProvider, ready: services.providers.isReady), proofread: settings.aiTranscriptCorrection)
     }
 
     /// Shorter tracks hold no speech worth a model run (the ASR pads short audio itself).
@@ -783,14 +793,15 @@ public final class MeetingSession: Identifiable {
         let screenNames = Array(Set(screenshots.flatMap(\.nameCandidates))).sorted()
         let title = metadata.title
         let glossary = settings.glossary
+        let context = context
         // Best effort: a failed proofreading pass never blocks the summary.
         async let proofreading: [TranscriptCorrector.Fix] = proofread
-            ? ((try? await corrector.corrections(transcript: snapshot, glossary: glossary, screenNames: screenNames, title: title)) ?? [])
+            ? ((try? await corrector.corrections(transcript: snapshot, glossary: glossary, screenNames: screenNames, title: title, context: context)) ?? [])
             : []
         do {
             let output = try await summarizer.summarize(
                 metadata: metadata, transcript: snapshot, screenshots: screenshots,
-                notes: notes, folder: folder, glossary: settings.glossary
+                notes: notes, folder: folder, glossary: settings.glossary, context: context
             )
             var current = transcript ?? snapshot
             let fixes = await proofreading
@@ -898,7 +909,28 @@ public final class MeetingSession: Identifiable {
     private func persistSecondaryFiles() {
         try? services.store.save(screenshots, in: folder)
         try? services.store.save(notes, in: folder)
+        saveContext()
         saveSuggestions()
+    }
+
+    /// Typing saves a moment after the last keystroke.
+    private func scheduleContextSave() {
+        contextSaveTask?.cancel()
+        contextSaveTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            self?.saveContext()
+        }
+    }
+
+    private func saveContext() {
+        contextSaveTask?.cancel()
+        let text = context.trimmingCharacters(in: .whitespacesAndNewlines)
+        if text.isEmpty {
+            try? FileManager.default.removeItem(at: folder.contextURL)
+        } else {
+            try? Data((text + "\n").utf8).write(to: folder.contextURL, options: .atomic)
+        }
     }
 
     private func saveSuggestions() {

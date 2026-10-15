@@ -75,6 +75,26 @@ struct RealPipelineTests {
         }
     }
 
+    /// No API key saved: the live copilot answers through the Claude Code login.
+    @Test(.timeLimit(.minutes(5))) func copilotAnswersThroughTheClaudeLogin() async throws {
+        let claude = try #require(await claudeIfAvailable(), "log in with `claude` first")
+        let h = Harness(settings: { $0.language = "en" }, asr: Self.asr, diarizer: Self.diarizer, provider: claude, apiKeys: [])
+        defer { h.cleanup() }
+        let remote = FakeRemoteAudio()
+        let session = try await h.start(title: "Code review sync", remote: remote, includeMic: false)
+        session.setCopilot(enabled: true)
+        #expect(h.requestedProviders.withLock { $0 } == [.claudeCLI])
+
+        remote.push(try Self.speech("Isac, can you review the payment pull request today?", voice: "Samantha") + silence(1.5), at: 0.3)
+        let answered = await waitUntil(timeout: .seconds(120)) {
+            session.suggestions.contains { $0.kind == .answer && $0.status == .ready && !$0.items.isEmpty }
+        }
+        #expect(answered, "warnings: \(session.warnings)")
+        if let card = session.suggestions.first(where: { $0.kind == .answer }) { print("Copilot:", card.items.map(\.text)) }
+        session.setCopilot(enabled: false)
+        await h.manager.stop(session)
+    }
+
     @Test(.timeLimit(.minutes(15))) func portugueseMeetingIsTranscribed() async throws {
         let h = Harness(settings: { $0.language = "pt" }, asr: Self.asr, diarizer: Self.diarizer)
         defer { h.cleanup() }

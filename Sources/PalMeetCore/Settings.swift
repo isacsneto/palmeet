@@ -125,6 +125,23 @@ public struct AppSettings: Codable, Sendable, Equatable {
         providerConfigs[config.kind.rawValue] = config
     }
 
+    /// Tried in this order when the chosen provider doesn't work.
+    public static let providerFallbackOrder: [LLMProviderKind] = [
+        .claudeCLI, .anthropicAPI, .codexCLI, .openAIAPI, .geminiCLI, .geminiAPI, .cursorCLI, .localOpenAICompatible,
+    ]
+
+    /// The provider actually used when `preferred` is chosen: `preferred` itself unless it's known not to work
+    /// (no API key, CLI missing or logged out); then the first provider known to work; then the other chosen
+    /// provider if it hasn't been checked yet. When nothing works, `preferred`, so its error says what to set up.
+    /// `ready` answers true/false, or nil when not checked yet.
+    public func workingProvider(_ preferred: LLMProviderKind, ready: (LLMProviderKind) -> Bool?) -> LLMProviderKind {
+        if ready(preferred) != false { return preferred }
+        let chosen = [summaryProvider, copilotProvider]
+        return (chosen + Self.providerFallbackOrder).first { ready($0) == true }
+            ?? chosen.first { ready($0) == nil }
+            ?? preferred
+    }
+
     // Decoding tolerates missing keys so new settings never wipe a user's existing ones.
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
