@@ -160,6 +160,17 @@ public final class SessionManager {
         }
         refreshLibrary()
         applyRetentionPolicy()
+        compactLibraryScreenshots()
+    }
+
+    /// Meetings recorded before screenshots were compacted get the same cleanup once, one at a time in the background.
+    func compactLibraryScreenshots() {
+        guard settings.compactScreenshots else { return }
+        let pending = library.filter { $0.metadata.status == .ready && $0.metadata.screenshotsCompacted != true }
+        guard !pending.isEmpty else { return }
+        Task(priority: .background) {
+            for session in pending { await session.compactScreenshots() }
+        }
     }
 
     /// Deletes audio (keeping transcripts, summaries and screenshots) of sessions older than the configured age.

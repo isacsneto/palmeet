@@ -697,6 +697,32 @@ public final class MeetingSession: Identifiable {
             return
         }
         await summarize(using: settings.workingProvider(settings.summaryProvider, ready: services.providers.isReady), proofread: settings.aiTranscriptCorrection)
+        await compactScreenshots()
+    }
+
+    /// Deletes screenshots that repeat another one and saves the rest smaller, once per meeting, after the summary
+    /// (whose screenshots are kept). Your marked screenshots are always kept.
+    func compactScreenshots() async {
+        guard settings().compactScreenshots, metadata.screenshotsCompacted != true else { return }
+        // Only once the meeting is done: recording, transcribing and summarizing still read the screenshots.
+        switch stage {
+        case .ready, .failed: break
+        default: return
+        }
+        let folder = folder
+        let shots = screenshots
+        let result = await Task.detached(priority: .utility) {
+            ScreenshotCompactor.compact(shots, in: folder, protected: ScreenshotCompactor.referencedPaths(in: folder))
+        }.value
+        // Screenshots added meanwhile (none once recording stopped) are kept as they are.
+        let handled = Set(shots.map(\.id))
+        screenshots = result.kept + screenshots.filter { !handled.contains($0.id) }
+        try? services.store.save(screenshots, in: folder)
+        metadata.screenshotsCompacted = true
+        persistMetadata()
+        if !shots.isEmpty {
+            logger.info("Screenshots: kept \(result.kept.count) of \(shots.count), \(result.bytesBefore / 1024) KB → \(result.bytesAfter / 1024) KB")
+        }
     }
 
     /// Shorter tracks hold no speech worth a model run (the ASR pads short audio itself).

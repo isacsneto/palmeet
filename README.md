@@ -98,7 +98,7 @@ Each meeting is saved to `~/Documents/PalMeet/<date time> – <title>/`:
 | `summary.md` / `summary.json` | The summary: TL;DR, decisions, action items, key takeaways, topics, open questions, risks, your commitments, quotes, screenshots |
 | `transcript.md` / `transcript.json` | Speaker-attributed transcript with timestamps |
 | `audio/them.caf`, `audio/me.caf` | The two audio tracks (16 kHz) |
-| `screenshots/*.jpg`, `screenshots/index.json` | Screenshots with their OCR text |
+| `screenshots/*.jpg`, `screenshots/index.json` | Screenshots with their OCR text. After the summary, repeats (same picture and on-screen text as a kept one, no new words) are deleted and the rest saved smaller (1440 px); marked screenshots and the ones in the summary stay. Settings → Privacy → "Remove repeated screenshots". |
 | `copilot.json`, `notes.json`, `session.json` | Copilot suggestions, your notes, session metadata |
 | `context.md` | The meeting context you typed (agenda, ticket, who's who); used by the copilot, the summary and spelling fixes |
 | `meeting-speakers.json` | Captions and "is speaking" indicators the meeting page showed (browser meetings) |

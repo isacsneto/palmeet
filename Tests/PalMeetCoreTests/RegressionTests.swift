@@ -150,6 +150,22 @@ struct ReviewRegressionTests {
         #expect(loaded.context.contains("partial refunds"), "regenerating later uses it too")
     }
 
+    @Test func screenshotsAreCompactedOnceAfterTheMeeting() async throws {
+        let h = Harness()
+        defer { h.cleanup() }
+        let session = try await h.start(remote: FakeRemoteAudio(), includeMic: false)
+        await h.manager.stop(session)
+        #expect(session.metadata.screenshotsCompacted == true)
+        let saved = try SessionStore.readJSON(SessionMetadata.self, from: session.folder.url.appending(path: "session.json"))
+        #expect(saved.screenshotsCompacted == true, "not repeated on the next launch")
+
+        let off = Harness { $0.compactScreenshots = false }
+        defer { off.cleanup() }
+        let kept = try await off.start(remote: FakeRemoteAudio(), includeMic: false)
+        await off.manager.stop(kept)
+        #expect(kept.metadata.screenshotsCompacted == nil, "turned off: screenshots are left alone")
+    }
+
     @Test func libraryShowsCopilotHistoryAfterRelaunch() async throws {
         let h = Harness()
         defer { h.cleanup() }

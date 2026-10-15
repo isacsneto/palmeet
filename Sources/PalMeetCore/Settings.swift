@@ -112,6 +112,8 @@ public struct AppSettings: Codable, Sendable, Equatable {
     /// While a browser meeting is recorded, note which page elements change (helps PalMeet improve detecting
     /// who is speaking on new meeting-site layouts). Saved only in the session folder.
     public var meetingPageDiagnostics = true
+    /// After a meeting, delete screenshots that repeat another one and save the rest smaller.
+    public var compactScreenshots = true
     public var storageRoot: String?
     public var hasCompletedOnboarding = false
 
@@ -165,6 +167,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
         aiTranscriptCorrection = try c.decodeIfPresent(Bool.self, forKey: .aiTranscriptCorrection) ?? d.aiTranscriptCorrection
         recognizeVoices = try c.decodeIfPresent(Bool.self, forKey: .recognizeVoices) ?? d.recognizeVoices
         meetingPageDiagnostics = try c.decodeIfPresent(Bool.self, forKey: .meetingPageDiagnostics) ?? d.meetingPageDiagnostics
+        compactScreenshots = try c.decodeIfPresent(Bool.self, forKey: .compactScreenshots) ?? d.compactScreenshots
         storageRoot = try c.decodeIfPresent(String.self, forKey: .storageRoot)
         hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? d.hasCompletedOnboarding
     }

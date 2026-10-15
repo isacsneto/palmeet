@@ -126,6 +126,8 @@ public struct SessionMetadata: Codable, Sendable, Identifiable, Equatable {
     public var summaryModel: String?
     public var lastError: String?
     public var appVersion: String
+    /// Repeated screenshots were removed and the rest recompressed (done once per meeting).
+    public var screenshotsCompacted: Bool?
 
     public init(
         id: SessionID = SessionID(),
@@ -310,6 +312,8 @@ public struct ScreenshotRecord: Codable, Sendable, Hashable, Identifiable {
     /// Short text lines that look like participant name labels.
     public var nameCandidates: [String]
     public var perceptualHash: UInt64
+    /// Re-saved smaller after the meeting (never recompressed twice).
+    public var compressed: Bool?
 
     public init(
         id: UUID = UUID(),

@@ -388,6 +388,9 @@ private struct PrivacySettingsView: View {
             }
             Section("Recordings") {
                 Toggle("Keep mic audio that was routed to another meeting", isOn: setting(app, \.privacy.keepUnroutedMicAudio))
+                Toggle("Remove repeated screenshots after a meeting", isOn: setting(app, \.compactScreenshots))
+                Text("Deletes screenshots that show the same screen and text as one that's kept, and saves the rest smaller. Screenshots you marked and the ones in the summary always stay.")
+                    .font(.caption).foregroundStyle(.secondary)
                 Picker("Delete audio (keep text) after", selection: setting(app, \.privacy.deleteAudioAfterDays)) {
                     Text("Never").tag(Int?.none)
                     Text("7 days").tag(Int?.some(7))
