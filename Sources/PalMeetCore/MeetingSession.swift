@@ -1016,3 +1016,18 @@ public final class MeetingSession: Identifiable {
 struct UncheckedImage: @unchecked Sendable {
     let image: CGImage
 }
+
+#if DEBUG
+extension MeetingSession {
+    /// Demo video: a live line goes through the same path as a transcribed one.
+    func demoIngest(_ segment: TranscriptSegment) async {
+        await handleLive(segment)
+    }
+
+    /// Demo video: level meters (no audio flows in the demo).
+    public func demoLevels(them: Float, me: Float) {
+        themLevel = them
+        meLevel = me
+    }
+}
+#endif

@@ -8,7 +8,6 @@ import SwiftUI
 struct ReviewView: View {
     @Environment(AppState.self) private var app
     let session: MeetingSession
-    @State private var tab = Tab.summary
     /// summary.md read once per summary change, not on every render.
     @State private var summaryMarkdown: String?
 
@@ -22,17 +21,18 @@ struct ReviewView: View {
     }
 
     var body: some View {
+        @Bindable var app = app
         VStack(alignment: .leading, spacing: 12) {
             header
             WarningBanner(messages: session.warnings + (session.metadata.lastError.map { [$0] } ?? []))
-            Picker("", selection: $tab) {
+            Picker("", selection: $app.reviewTab) {
                 ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
             }
             .pickerStyle(.segmented)
             .labelsHidden()
             .frame(maxWidth: 460)
 
-            switch tab {
+            switch app.reviewTab {
             case .summary: summaryTab
             case .transcript: transcriptTab
             case .screenshots: screenshotsTab

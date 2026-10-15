@@ -719,3 +719,12 @@ final class SettingsBox: @unchecked Sendable {
         set { lock.withLock { _value = newValue } }
     }
 }
+
+#if DEBUG
+extension SessionManager {
+    /// Demo video: the live meeting leaves the "Recording" list without being processed.
+    func demoRemoveActive(_ session: MeetingSession) {
+        activeSessions.removeAll { $0.id == session.id }
+    }
+}
+#endif

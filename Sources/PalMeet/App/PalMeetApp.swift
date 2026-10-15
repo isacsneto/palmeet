@@ -54,6 +54,12 @@ private struct MenuBarLabel: View {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+        if DemoRecorder.isRequested {
+            MainActor.assumeIsolated { DemoRecorder.start() }
+            return
+        }
+        #endif
         if let file = MainActor.assumeIsolated({ CommandLineImport.file }) {
             Task { @MainActor in
                 await CommandLineImport.run(file)

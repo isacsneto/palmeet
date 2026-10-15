@@ -11,7 +11,7 @@ import SwiftUI
 final class AppState {
     static let shared = AppState()
 
-    let manager = SessionManager()
+    let manager: SessionManager
     let windows = WindowController()
     @ObservationIgnored private(set) lazy var updates = UpdateController(secrets: manager.secrets)
     var selectedSessionID: SessionID?
@@ -19,8 +19,18 @@ final class AppState {
     var quickNoteSessionID: SessionID?
     var lastError: String?
     var showCheatSheet = false
+    /// Review tab, kept when switching between meetings.
+    var reviewTab = ReviewView.Tab.summary
 
-    private init() {}
+    private init() {
+        #if DEBUG
+        if DemoRecorder.isRequested {
+            manager = DemoRecorder.makeManager()
+            return
+        }
+        #endif
+        manager = SessionManager()
+    }
 
     func bootstrap() {
         // The extension folder is refreshed before the bridge starts, so an outdated extension that is asked to
