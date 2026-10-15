@@ -3,6 +3,19 @@
     <channel>
         <title>PalMeet</title>
         <item>
+            <title>0.2.3</title>
+            <pubDate>Thu, 15 Oct 2026 12:27:26 -0300</pubDate>
+            <sparkle:version>261015122654</sparkle:version>
+            <sparkle:shortVersionString>0.2.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<h2>PalMeet 0.2.3</h2><ul>
+<li>Screenshots stay light: after a meeting, PalMeet deletes screenshots that repeat one it keeps (same screen, same text, nothing new like a chat message) and saves the rest smaller. Marked screenshots and the ones in the summary always stay. Your existing meetings get the same cleanup once. Turn it off in Settings → Privacy → Recordings.</li>
+</ul>
+]]></description>
+            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.3.zip" length="15036445" type="application/octet-stream" sparkle:edSignature="fy9TLH2LkCSRM77NYkWTwVlqnAHKZL0BXnFOne+y+ODgXdyENfllzj6q8fisnf8FsZ+VA1uyJVUcJc1r7QKEDg=="/>
+        </item>
+        <item>
             <title>0.2.2</title>
             <pubDate>Thu, 15 Oct 2026 12:19:46 -0300</pubDate>
             <sparkle:version>261015121924</sparkle:version>
@@ -31,23 +44,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.1.zip" length="14993857" type="application/octet-stream" sparkle:edSignature="fmqXtQr9B73l3cJZ6DgAo/vIEXyjRFvi9sJAD1k6yugmn3V+b67vUzCsw2rZDthQQYGI990fy3e3/mkoGyiPAA=="/>
-        </item>
-        <item>
-            <title>0.2.0</title>
-            <pubDate>Wed, 14 Oct 2026 12:17:41 -0300</pubDate>
-            <sparkle:version>261014121618</sparkle:version>
-            <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description><![CDATA[<h2>PalMeet 0.2.0</h2><ul>
-<li>Who said what: in browser meetings with live captions on (CC), every line is named from the meeting's own captions.</li>
-<li>PalMeet learns voices: name a speaker once in Review and they are recognized by voice in later meetings, including the Teams and Zoom apps (Settings → General → Who said what).</li>
-<li>Separate people the speaker separation lumped together, and merge one person it split in two.</li>
-<li>The live view shows whose names the meeting is providing, or reminds you to turn on captions.</li>
-<li>The browser extension updates itself after PalMeet updates.</li>
-</ul>
-]]></description>
-            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.0.zip" length="14972111" type="application/octet-stream" sparkle:edSignature="+A/3en3VPb1WYJkB/XgwXIdqGJkefShIPi2S4Fx9ykQJcjca2FOUmyGbexCWVqu7JK+8NrTmxP4W532Hf8+QAw=="/>
         </item>
     </channel>
 </rss>
