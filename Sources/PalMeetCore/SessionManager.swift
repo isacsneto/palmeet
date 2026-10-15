@@ -186,9 +186,16 @@ public final class SessionManager {
     func applyRetentionPolicy() {
         guard let days = settings.privacy.deleteAudioAfterDays, days > 0 else { return }
         let cutoff = Date().addingTimeInterval(-Double(days) * 86_400)
-        for session in library where session.metadata.createdAt < cutoff && session.metadata.status == .ready {
+        for session in library where Self.savedAt(session) < cutoff && session.metadata.status == .ready {
             try? FileManager.default.removeItem(at: session.folder.audioDirectory)
         }
+    }
+
+    /// When PalMeet saved the meeting: imported recordings carry the original video's date, so the age counts
+    /// from the import (the folder's creation), never from earlier.
+    static func savedAt(_ session: MeetingSession) -> Date {
+        let created = try? session.folder.url.resourceValues(forKeys: [.creationDateKey]).creationDate
+        return max(session.metadata.createdAt, created ?? .distantPast)
     }
 
     /// Finalizes every recording's files without transcribing (app quit).

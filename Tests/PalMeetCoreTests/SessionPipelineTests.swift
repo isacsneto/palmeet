@@ -514,10 +514,21 @@ struct SessionManagerPolicyTests {
         var metadata = session.metadata
         metadata.createdAt = Date().addingTimeInterval(-10 * 86_400)
         try h.manager.store.save(metadata, in: session.folder)
-        // A fresh app launch reads the library from disk and applies the policy.
+
+        // An imported video carries its own (old) date but was saved just now: its audio stays.
         let relaunched = Harness(root: h.root) { $0.privacy.deleteAudioAfterDays = 7 }
         relaunched.manager.refreshLibrary()
         relaunched.manager.applyRetentionPolicy()
+        #expect(FileManager.default.fileExists(atPath: session.folder.audioDirectory.path), "age counts from when PalMeet saved it")
+
+        // Saved 10 days ago: a fresh app launch reads the library from disk and deletes the audio.
+        var folderURL = session.folder.url
+        var values = URLResourceValues()
+        values.creationDate = metadata.createdAt
+        try folderURL.setResourceValues(values)
+        let later = Harness(root: h.root) { $0.privacy.deleteAudioAfterDays = 7 }
+        later.manager.refreshLibrary()
+        later.manager.applyRetentionPolicy()
         #expect(!FileManager.default.fileExists(atPath: session.folder.audioDirectory.path))
         #expect(FileManager.default.fileExists(atPath: session.folder.transcriptMarkdownURL.path))
     }
