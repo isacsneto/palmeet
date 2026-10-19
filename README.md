@@ -138,8 +138,12 @@ All of them can be changed in Settings → Hotkeys. `⌃⌥/` shows the cheat sh
 
 Remote speech is attributed in this order (`SpeakerAttribution`):
 
-1. **Meeting captions.** With the extension and live captions on, Teams, Meet and Zoom label each caption with the speaker's name. Caption text is aligned to the transcribed words, and those words take that name. This splits people the diarizer lumped together and merges one person it split.
-2. **Voice clusters** from the diarizer, named by most of their caption-labelled words, by "is speaking" indicators, or by a voice learned earlier. On real recordings the same voice scores 0.92–0.96 and different people at most 0.44; PalMeet needs at least 0.65 with a clear winner.
+1. **The meeting itself**, through the extension:
+   - **Captions.** With live captions on, Teams, Meet and Zoom label each caption with the speaker's name. Caption text is aligned to the transcribed words, and those words take that name.
+   - **The speaking highlight on each tile.** Meet animates the voice bars on the tile of whoever is talking, and Teams outlines it. A turn that the highlight gives to one person takes their name, even with captions off. Your own tile is ignored, since your mic covers you.
+
+   Both split people the diarizer lumped together and merge one person it split.
+2. **Voice clusters** from the diarizer, named by most of their meeting-labelled words, or by a voice learned earlier. On real recordings the same voice scores 0.92–0.96 and different people at most 0.44; PalMeet needs at least 0.65 with a clear winner.
 3. Otherwise "Speaker N", which the summary may name from what people say. It never overrides names from you, the meeting or a known voice.
 
 Naming a speaker in Review, or the meeting naming them, teaches PalMeet their voice (after at least 8 s of speech). Known voices are listed in Settings → General → Who said what.

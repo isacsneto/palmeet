@@ -139,10 +139,61 @@ private func lines(_ transcript: Transcript) -> [String] {
         let spans = [DiarizedSpan(speakerKey: "A", start: 0, end: 19.6), DiarizedSpan(speakerKey: "B", start: 20, end: 39.6)]
         let output = assemble(them, spans: spans, timeline: timeline)
         #expect(lines(output.transcript) == ["Alice Smith: \(aliceLong)", "Bob Jones: \(bobLong)"])
-        // A few words under an indicator aren't enough to name a whole voice.
+        // A short turn under an indicator is hers, but too little to learn her voice from.
         let brief = assemble(words(alice, from: 0), spans: [DiarizedSpan(speakerKey: "A", start: 0, end: 5.6)],
-                             timeline: MeetingSpeakerTimeline(speaking: [.init(name: "Alice Smith", start: 0, end: 2)]))
-        #expect(brief.transcript.speakers.map(\.displayName) == ["Speaker 1"])
+                             timeline: MeetingSpeakerTimeline(speaking: [.init(name: "Alice Smith", start: 0, end: 2)]),
+                             voiceprints: ["A": voice(0).vector])
+        #expect(lines(brief.transcript) == ["Alice Smith: \(alice)"])
+        #expect(brief.learnableVoices.isEmpty)
+        // An indicator that lit for one word of a long turn doesn't name it.
+        let glimpse = assemble(words(aliceLong, from: 0), spans: [DiarizedSpan(speakerKey: "A", start: 0, end: 19.6)],
+                               timeline: MeetingSpeakerTimeline(speaking: [.init(name: "Bob Jones", start: 3, end: 3.5)]))
+        #expect(glimpse.transcript.speakers.map(\.displayName) == ["Speaker 1"])
+    }
+
+    @Test func tileHighlightsSplitPeopleTheDiarizerLumpedTogether() {
+        // One cluster for three turns by two people (as in a real Meet call); only the tiles tell them apart.
+        let them = words(alice, from: 0) + words(bob, from: 6) + words("Thanks Bob that sounds good to me", from: 12)
+        let timeline = MeetingSpeakerTimeline(speaking: [
+            .init(name: "Alice Smith", start: 0.3, end: 5.2),
+            .init(name: "Bob Jones", start: 6.1, end: 9),     // flickers off mid-turn…
+            .init(name: "Bob Jones", start: 9.6, end: 11.9),
+            .init(name: "Alice Smith", start: 11.5, end: 15),  // …and lingers into the next turn
+        ])
+        let output = assemble(them, spans: [DiarizedSpan(speakerKey: "A", start: 0, end: 16)], timeline: timeline)
+        #expect(lines(output.transcript) == [
+            "Alice Smith: \(alice)", "Bob Jones: \(bob)", "Alice Smith: Thanks Bob that sounds good to me",
+        ])
+    }
+
+    @Test func noticesAndYourOwnTileAreNotSpeakers() {
+        let them = words(aliceLong, from: 0)
+        let me = words("Sorry I was on mute can everyone hear me now", from: 30)
+        let timeline = MeetingSpeakerTimeline(speaking: [
+            .init(name: "Are you", start: 0, end: 20),        // Meet's "Are you talking? Your mic is off."
+            .init(name: "Isac Santos", start: 30, end: 34.5),  // your own tile, lit by your mic
+            .init(name: "Isac Santos", start: 0, end: 1),
+        ])
+        let output = TranscriptAssembler.assembleDetailed(
+            sessionID: SessionID(),
+            input: .init(themWords: them, meWords: me, diarization: [DiarizedSpan(speakerKey: "A", start: 0, end: 20)], micRouting: nil,
+                         meName: "Isac", timeline: timeline, voiceprints: ["A": voice(0).vector], knownVoices: [])
+        )
+        #expect(output.transcript.speakers.map(\.displayName) == ["Isac", "Speaker 1"])
+        #expect(output.learnableVoices.isEmpty)
+    }
+
+    @Test func pageNoticesAreNotNames() {
+        for name in ["Ryan Jackson", "Igor", "Isabel Ramos", "Yegor Kluban", "Anne-Marie O'Neil", "João"] {
+            #expect(MeetingSpeakerTimeline.isPersonName(name), "\(name)")
+        }
+        for name in ["Are you", "Are you talking? Your mic is off.", "You", "you're presenting", "Você", "Someone", "No one", "", "10:42"] {
+            #expect(!MeetingSpeakerTimeline.isPersonName(name), "\(name)")
+        }
+        var timeline = MeetingSpeakerTimeline()
+        timeline.recordSpeaking(["Are you", "Ryan Jackson"], at: 1)
+        timeline.finish(at: 2)
+        #expect(timeline.speaking == [.init(name: "Ryan Jackson", start: 1, end: 2)])
     }
 
     @Test func overlappingIndicatorsAreNotTrusted() {
@@ -253,6 +304,21 @@ private func lines(_ transcript: Transcript) -> [String] {
 }
 
 @Suite struct VoiceProfileStoreTests {
+    @Test func dropsVoicesLearnedUnderANotice() throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: "palmeet-voices-\(UUID().uuidString)/Voices.json")
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let store = VoiceProfileStore(url: url)
+        var bogus = VoiceProfile(name: "Are you")
+        bogus.samples = [.init(vector: voice(0).vector, seconds: 30, sessionID: "a", addedAt: Date())]
+        var ryan = VoiceProfile(name: "Ryan Jackson")
+        ryan.samples = [.init(vector: voice(1).vector, seconds: 30, sessionID: "a", addedAt: Date())]
+        try store.save([bogus, ryan])
+        #expect(store.load().map(\.name) == ["Ryan Jackson"])
+        try store.learn(name: "Igor", voice: voice(2), sessionID: "b")
+        let saved = try String(contentsOf: url, encoding: .utf8)
+        #expect(!saved.contains("Are you"))
+    }
+
     @Test func learnsRenamesForgetsAndCapsSamples() throws {
         let url = FileManager.default.temporaryDirectory.appending(path: "palmeet-voices-\(UUID().uuidString)/Voices.json")
         defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }

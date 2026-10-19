@@ -380,7 +380,7 @@ public final class MeetingSession: Identifiable {
             return "Names from the meeting's captions: \(names.prefix(4).joined(separator: ", "))\(names.count > 4 ? " +\(names.count - 4)" : "")"
         }
         if !names.isEmpty {
-            return "Speaking indicators seen for \(names.prefix(4).joined(separator: ", "))"
+            return "Names from who is highlighted on the meeting tiles: \(names.prefix(4).joined(separator: ", "))"
         }
         return elapsed > 60 ? "Turn on live captions in the meeting (CC) so PalMeet knows exactly who said what." : nil
     }

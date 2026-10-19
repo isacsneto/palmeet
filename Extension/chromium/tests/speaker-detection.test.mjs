@@ -50,6 +50,17 @@ test('names must look like names', () => {
   assert.equal(plausibleName('x'.repeat(81)), null);
 });
 
+test('prompts and notices are not people', () => {
+  const { personName } = load();
+  assert.equal(personName('Ryan Jackson'), 'Ryan Jackson');
+  assert.equal(personName('Are you'), null);
+  assert.equal(personName('Are you talking? Your mic is off.'), null);
+  assert.equal(personName('You'), null);
+  assert.equal(personName('Você'), null);
+  assert.equal(personName('Someone'), null);
+  assert.equal(personName('Isabel Ramos'), 'Isabel Ramos', 'names that start like a stop word are fine');
+});
+
 // ---- real DOM in Chrome for Testing ---------------------------------------------------------------
 
 const chrome = process.env.PALMEET_CHROME;
@@ -79,6 +90,27 @@ const fixtures = {
       <div><div><img alt=""><div><span>João Pedro</span></div></div><div><span>bom dia pessoal</span></div></div>
     </div>`,
   nothing: `<div><p>Waiting for others to join…</p><button aria-label="Mute">m</button></div>`,
+  // Meet: participant tiles with voice bars, plus the "are you talking?" notice when your mic is off.
+  meetTiles: `
+    <div data-participant-id="spaces/a/devices/1"><div data-requested-participant-id="spaces/a/devices/1">
+      <div class="IisKdb GF8M7d gjg47c YFyDbd" id="bars-ryan"></div>
+      <span class="notranslate">Ryan Jackson</span>
+      <button aria-label="More options for Ryan Jackson">⋮</button>
+      <button aria-label="Mute Ryan Jackson's microphone">m</button></div></div>
+    <div data-participant-id="spaces/a/devices/2">
+      <div class="xyz" id="bars-yegor"></div>
+      <span class="notranslate">Yegor Kluban</span>
+      <button aria-label="More options for Yegor Kluban">⋮</button></div>
+    <div data-participant-id="spaces/a/devices/3">
+      <div class="DYfzY cYKTje gjg47c sxlEM"></div>
+      <button aria-label="Pin Danilo Cavalcanti to your main screen">p</button></div>
+    <div role="dialog"><div aria-label="Are you talking? Your mic is off.">Are you talking? Your mic is off.</div></div>`,
+  // Meet without participant IDs: tiles are found from their buttons.
+  meetNoIDs: `
+    <div class="grid">
+      <div class="tile"><div class="inner"><div class="bars Oaajhc"></div><button aria-label="More options for Ana Lima">⋮</button></div></div>
+      <div class="tile"><div class="inner"><div class="bars gjg47c"></div><button aria-label="More options for Bruno Dias">⋮</button></div></div>
+    </div>`,
 };
 
 async function cdpSession(port) {
@@ -150,6 +182,44 @@ test('reads captions and speaking indicators from meeting pages', { skip: !chrom
     ]);
     const portuguese = await run(fixtures.meetPortuguese, 'meet.google.com');
     assert.deepEqual(portuguese.captions, [{ name: 'João Pedro', text: 'bom dia pessoal' }]);
+
+    // Meet tiles: nobody talking, then the known voice-bar class, then an unknown class that keeps flipping.
+    const tiles = await cdp.call('Runtime.evaluate', {
+      awaitPromise: true,
+      returnByValue: true,
+      expression: `(async () => {
+        const d = globalThis.PalMeetSpeakerDetection;
+        const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+        document.body.innerHTML = ${JSON.stringify(fixtures.meetTiles)};
+        const watcher = new d.MeetSpeakingWatcher(document);
+        watcher.start();
+        const read = () => d.readSpeaking(document, 'meet.google.com', watcher);
+        const out = { names: d.meetTiles(document).map((t) => t.name), quiet: read() };
+        document.getElementById('bars-ryan').className = 'IisKdb GF8M7d wEsLMd YFyDbd';
+        out.ryan = read();
+        document.getElementById('bars-ryan').className = 'IisKdb GF8M7d gjg47c YFyDbd';
+        for (let i = 0; i < 5; i++) { document.getElementById('bars-yegor').className = i % 2 ? 'xyz a' : 'xyz b'; await pause(20); }
+        out.yegor = read();
+        await pause(1300);
+        out.settled = read();
+        out.withoutWatcher = d.readSpeaking(document, 'meet.google.com');
+        watcher.stop();
+        document.body.innerHTML = ${JSON.stringify(fixtures.meetNoIDs)};
+        const plain = new d.MeetSpeakingWatcher(document);
+        out.noIDs = { names: d.meetTiles(document).map((t) => t.name), speaking: plain.read() };
+        return JSON.stringify(out);
+      })()`,
+    });
+    assert.ok(!tiles.result.exceptionDetails, JSON.stringify(tiles.result.exceptionDetails));
+    assert.deepEqual(JSON.parse(tiles.result.result.value), {
+      names: ['Ryan Jackson', 'Yegor Kluban', 'Danilo Cavalcanti'],
+      quiet: [],
+      ryan: ['Ryan Jackson'],
+      yegor: ['Ryan Jackson', 'Yegor Kluban'], // Ryan's highlight lingers a moment after his bars rest
+      settled: [],
+      withoutWatcher: null,
+      noIDs: { names: ['Ana Lima', 'Bruno Dias'], speaking: ['Ana Lima'] },
+    });
 
     const empty = await run(fixtures.nothing, 'teams.microsoft.com');
     assert.deepEqual(empty, { captions: [], speaking: null });

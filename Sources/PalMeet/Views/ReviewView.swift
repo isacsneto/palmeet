@@ -68,6 +68,8 @@ struct ReviewView: View {
                 Button("Fix misheard words, then regenerate") {
                     Task { await session.summarize(using: app.manager.workingSummaryProvider, proofread: true) }
                 }
+                Button("Transcribe again from the audio") { Task { await session.reprocess() } }
+                    .disabled(!hasAudio)
             } label: {
                 Label("Regenerate summary", systemImage: "sparkles")
             }
@@ -87,6 +89,11 @@ struct ReviewView: View {
         case .finishing, .transcribing, .summarizing: true
         default: false
         }
+    }
+
+    /// Transcribing again redoes who said what (and the summary); speaker names you set by hand are replaced.
+    private var hasAudio: Bool {
+        FileManager.default.fileExists(atPath: session.folder.audioURL(for: .them).path)
     }
 
     private var canReprocess: Bool {

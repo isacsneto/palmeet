@@ -13,11 +13,21 @@
 
   const clean = (text) => (text || '').replace(/\s+/g, ' ').trim();
 
+  // Words that start prompts and notices, never a person ("Are you talking? Your mic is off.").
+  const NOT_A_NAME = /^(?:are|is|am|you|you're|your|yours|someone|somebody|anyone|anybody|everyone|nobody|no one|who|voc[eê]|algu[eé]m|ningu[eé]m|est[aá]s?|usted|alguien|nadie)(?=$|[\s,.'’])/iu;
+
   function plausibleName(text) {
     const name = clean(text);
     if (!name || name.length > MAX_NAME_LENGTH) return null;
     // Not a timestamp, number or punctuation-only string.
     if (!/\p{L}/u.test(name)) return null;
+    return name;
+  }
+
+  /** A name read from a label or tile: also not a question or a notice. */
+  function personName(text) {
+    const name = plausibleName(text);
+    if (!name || /[?!¿¡:]/.test(name) || NOT_A_NAME.test(name)) return null;
     return name;
   }
 
@@ -129,14 +139,174 @@
     const names = new Set();
     for (const el of doc.querySelectorAll('[aria-label], [title]')) {
       const label = clean(el.getAttribute('aria-label') || el.getAttribute('title'));
-      if (!label || label.length > 160 || NOT_SPEAKING.test(label)) continue;
+      // Questions and notices ("Are you talking? Your mic is off.") aren't someone speaking.
+      if (!label || label.length > 160 || label.includes('?') || NOT_SPEAKING.test(label)) continue;
       const match = SPEAKING_LABEL.exec(label);
       if (match && isVisible(el)) {
-        const name = plausibleName(match[1]);
+        const name = personName(match[1]);
         if (name) names.add(name);
       }
     }
     return names;
+  }
+
+  // ---- Google Meet: the tile of whoever is talking ------------------------------------------------
+
+  // Meet has no "is speaking" label. While someone talks it animates the voice bars on their tile (and the
+  // tile's outline) by swapping CSS classes many times a second; when they stop, the bars settle. So:
+  //   1. find the participant tiles and the name on each;
+  //   2. a tile is speaking while one of its known voice-level classes is on, or while any element in it keeps
+  //      flipping classes (so a renamed class in a new Meet build still works).
+  const MEET_TILE = '[data-participant-id], [data-requested-participant-id]';
+  // Voice-level classes in Meet's current build; "gjg47c" is the bars at rest.
+  const MEET_LEVEL_CLASSES = ['Oaajhc', 'HX2H7', 'wEsLMd', 'OgVli'];
+  const MEET_LEVEL_SELECTOR = MEET_LEVEL_CLASSES.map((c) => `.${c}:not(.gjg47c)`).join(', ');
+  // Buttons on each tile name its person.
+  const TILE_LABELS = [
+    /^More options for (.+)$/i,
+    /^Mute (.+?)['’]s microphone$/i,
+    /^(?:Pin|Unpin) (.+?) (?:to|from) (?:your )?main screen$/i,
+    /^Remove (.+?) from the (?:call|meeting)$/i,
+    /^Mais opções (?:para|de) (.+)$/i,
+    /^(?:Desativar|Desligar) o microfone de (.+)$/i,
+    /^(?:Fixar|Liberar) (.+?) (?:na|da) (?:sua )?tela principal$/i,
+    /^Más opciones (?:para|de) (.+)$/i,
+    /^Silenciar (?:el micrófono de|a) (.+)$/i,
+  ];
+  const TILE_REFRESH_MS = 2000;
+  const FLIP_WINDOW_MS = 1200;
+  const FLIP_RECENT_MS = 600;
+  const FLIP_MINIMUM = 3;
+  // More tiles than this flipping at once is a layout change, not people talking.
+  const FLIP_MAX_TILES = 3;
+  // The bars rest between words; someone stays "speaking" this long after their bars last moved.
+  const SPEAKING_HOLD_MS = 700;
+
+  function nameFromTileLabel(label) {
+    const text = clean(label);
+    for (const pattern of TILE_LABELS) {
+      const match = pattern.exec(text);
+      if (match) return personName(match[1]);
+    }
+    return null;
+  }
+
+  function tileName(tile) {
+    for (const el of tile.querySelectorAll('[aria-label]')) {
+      const name = nameFromTileLabel(el.getAttribute('aria-label'));
+      if (name) return name;
+    }
+    const self = tile.querySelector('[data-self-name]');
+    if (self) return personName(self.getAttribute('data-self-name'));
+    for (const el of tile.querySelectorAll('.notranslate')) {
+      const name = personName(el.textContent);
+      if (name) return name;
+    }
+    return null;
+  }
+
+  /** Participant tiles and their names: [{tile, name}], one per name. */
+  function meetTiles(doc) {
+    const found = new Map();
+    for (const el of doc.querySelectorAll(MEET_TILE)) {
+      // The outermost element of each tile (tiles nest an inner element with the same participant).
+      if (el.parentElement?.closest(MEET_TILE)) continue;
+      const name = tileName(el);
+      if (name && !found.has(name)) found.set(name, el);
+    }
+    if (found.size === 0) {
+      // No participant IDs: each tile is the largest box around a "More options for <name>" button that names
+      // nobody else.
+      for (const el of doc.querySelectorAll('[aria-label]')) {
+        const name = nameFromTileLabel(el.getAttribute('aria-label'));
+        if (!name || found.has(name)) continue;
+        let tile = el;
+        while (tile.parentElement && tile.parentElement !== doc.body && namesIn(tile.parentElement).size <= 1) tile = tile.parentElement;
+        if (tile !== el) found.set(name, tile);
+      }
+    }
+    return [...found.entries()].map(([name, tile]) => ({ name, tile }));
+  }
+
+  function namesIn(el) {
+    const names = new Set();
+    for (const labelled of el.querySelectorAll('[aria-label]')) {
+      const name = nameFromTileLabel(labelled.getAttribute('aria-label'));
+      if (name) names.add(name);
+      if (names.size > 1) break;
+    }
+    return names;
+  }
+
+  /** Watches class flips on the page while a Meet tab is recorded and reads which tiles are talking. */
+  class MeetSpeakingWatcher {
+    constructor(doc, now = () => performance.now()) {
+      this.doc = doc;
+      this.now = now;
+      this.flips = [];
+      this.observer = null;
+      this.tiles = [];
+      this.tilesAt = -Infinity;
+      this.lastSpoke = new Map();
+    }
+
+    start() {
+      if (this.observer || typeof MutationObserver === 'undefined' || !this.doc.body) return;
+      this.observer = new MutationObserver((records) => {
+        const at = this.now();
+        for (const record of records) {
+          const el = record.target;
+          // Hovering a tile restyles its buttons; that's not talking.
+          if (el.nodeType !== 1 || el.closest('button, [role="button"]')) continue;
+          this.flips.push({ el, at });
+        }
+        if (this.flips.length > 4000) this.flips.splice(0, this.flips.length - 2000);
+      });
+      this.observer.observe(this.doc.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+    }
+
+    stop() {
+      this.observer?.disconnect();
+      this.observer = null;
+      this.flips = [];
+    }
+
+    /** Names on the tiles shown as talking now, [] when nobody is, or null when there are no tiles. */
+    read() {
+      const now = this.now();
+      if (now - this.tilesAt > TILE_REFRESH_MS || this.tiles.some((t) => !t.tile.isConnected)) {
+        this.tiles = meetTiles(this.doc);
+        this.tilesAt = now;
+      }
+      if (this.tiles.length === 0) return null;
+      const cutoff = now - FLIP_WINDOW_MS;
+      let first = 0;
+      while (first < this.flips.length && this.flips[first].at < cutoff) first++;
+      if (first > 0) this.flips.splice(0, first);
+
+      const known = new Set();
+      const flipping = new Set();
+      for (const { name, tile } of this.tiles) {
+        if (tile.querySelector(MEET_LEVEL_SELECTOR)) known.add(name);
+        const counts = new Map();
+        let recent = false;
+        for (const flip of this.flips) {
+          if (!tile.contains(flip.el)) continue;
+          const count = (counts.get(flip.el) ?? 0) + 1;
+          counts.set(flip.el, count);
+          if (count >= FLIP_MINIMUM && now - flip.at <= FLIP_RECENT_MS) recent = true;
+        }
+        if (recent) flipping.add(name);
+      }
+      for (const name of known) this.lastSpoke.set(name, now);
+      if (flipping.size <= FLIP_MAX_TILES) for (const name of flipping) this.lastSpoke.set(name, now);
+      const names = [];
+      for (const [name, at] of this.lastSpoke) {
+        if (now - at <= SPEAKING_HOLD_MS) names.push(name);
+        else this.lastSpoke.delete(name);
+      }
+      return names.sort();
+    }
   }
 
   // Teams: participant tiles carry the person's name; the voice-level outline is drawn while they talk.
@@ -154,11 +324,17 @@
     return names;
   }
 
-  /** Names currently shown as speaking, or null when this page has no indicator we understand. */
-  function readSpeaking(doc, host) {
+  /**
+   * Names currently shown as speaking, [] when the page shows nobody talking, or null when this page has no
+   * indicator we understand. `meetWatcher` (a MeetSpeakingWatcher) reads Meet's tiles.
+   */
+  function readSpeaking(doc, host, meetWatcher = null) {
     const names = speakingFromLabels(doc);
     if (host.startsWith('teams.')) for (const n of teamsSpeaking(doc)) names.add(n);
-    return names.size > 0 ? [...names].sort() : null;
+    const tiles = host === 'meet.google.com' && meetWatcher ? meetWatcher.read() : null;
+    for (const n of tiles ?? []) names.add(n);
+    if (names.size > 0) return [...names].sort();
+    return tiles ? [] : null;
   }
 
   // ---- change tracking ----------------------------------------------------------------------------
@@ -288,6 +464,7 @@
         regions,
         captionsFound,
         speaking,
+        tiles: { ids: this.doc.querySelectorAll(MEET_TILE).length, names: meetTiles(this.doc).map((t) => t.name) },
       };
       this.counts.clear();
       this.mutations = 0;
@@ -295,5 +472,7 @@
     }
   }
 
-  global.PalMeetSpeakerDetection = { readCaptions, readSpeaking, CaptionTracker, PageDiagnostics, plausibleName };
+  global.PalMeetSpeakerDetection = {
+    readCaptions, readSpeaking, CaptionTracker, PageDiagnostics, MeetSpeakingWatcher, meetTiles, plausibleName, personName,
+  };
 })(globalThis);

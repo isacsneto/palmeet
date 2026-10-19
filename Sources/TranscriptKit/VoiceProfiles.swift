@@ -1,4 +1,5 @@
 import Foundation
+import SessionKit
 
 /// Speaker-embedding math. Voiceprints are L2-normalized WeSpeaker embeddings from the diarizer.
 public enum Voiceprint {
@@ -139,11 +140,13 @@ public struct VoiceProfileStore: Sendable {
         var profiles: [VoiceProfile]
     }
 
+    /// People in the library. Names that are a page notice, not a person (learned before PalMeet 0.2.6 told them
+    /// apart, e.g. "Are you"), are left out and dropped at the next save.
     public func load() -> [VoiceProfile] {
         guard let data = try? Data(contentsOf: url),
               let file = try? JSONDecoder.voiceStore.decode(File.self, from: data)
         else { return [] }
-        return file.profiles
+        return file.profiles.filter { MeetingSpeakerTimeline.isPersonName($0.name) }
     }
 
     public func save(_ profiles: [VoiceProfile]) throws {

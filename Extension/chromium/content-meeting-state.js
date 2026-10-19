@@ -147,6 +147,7 @@
   let capturing = false;
   let diagnosticsWanted = false;
   let diagnostics = null;
+  let meetWatcher = null;
   let lastSpeaking = null;
   let captionsSeen = 0;
   let orphaned = false;
@@ -164,6 +165,13 @@
     if (orphaned) return;
     const status = await sendToBackground({ type: 'captureStatus' }).catch(() => null);
     capturing = !!status?.capturing;
+    if (capturing && host === 'meet.google.com' && !meetWatcher && document.body) {
+      meetWatcher = new detection.MeetSpeakingWatcher(document);
+      meetWatcher.start();
+    } else if (!capturing && meetWatcher) {
+      meetWatcher.stop();
+      meetWatcher = null;
+    }
     diagnosticsWanted = capturing && !!status?.diagnostics;
     if (diagnosticsWanted && !diagnostics && document.body) {
       diagnostics = new detection.PageDiagnostics(document);
@@ -180,7 +188,7 @@
     let speaking = null;
     try {
       captions = tracker.update(detection.readCaptions(document, host));
-      speaking = detection.readSpeaking(document, host);
+      speaking = detection.readSpeaking(document, host, meetWatcher);
     } catch {
       return;
     }
@@ -213,6 +221,7 @@
     for (const t of speakerTimers) clearInterval(t);
     clearInterval(stopWhenOrphaned);
     diagnostics?.stop();
+    meetWatcher?.stop();
   }, 5000);
   refreshStatus();
 })();

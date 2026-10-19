@@ -3,9 +3,11 @@ import SessionKit
 
 /// Decides who said each remote word by combining three sources, most trusted first:
 ///
-/// 1. **Meeting captions.** Teams/Meet/Zoom label captions with the speaker's name (they know who is talking
-///    because every participant is a separate stream on their servers). Each caption is aligned to the words
-///    PalMeet transcribed around that time; matching words take the caption's name.
+/// 1. **The meeting itself.** Teams/Meet/Zoom know who is talking (every participant is a separate stream on
+///    their servers) and show it two ways:
+///    - captions labelled with the speaker's name: each is aligned to the words PalMeet transcribed around that
+///      time, and matching words take the caption's name;
+///    - the speaking highlight on the person's tile: a turn the highlight gives to one person is theirs.
 /// 2. **Voice clusters** from the diarizer, named by majority vote of the caption-labelled words in them (or by
 ///    "is speaking" indicators), or by a voice PalMeet learned in earlier meetings.
 /// 3. The diarizer's cluster alone ("Speaker 3") when nothing else is known.
@@ -27,6 +29,14 @@ public enum SpeakerAttribution {
         public var clusterMinimumVotes: Double = 6
         /// Speaking indicators lag the audio by about this much.
         public var indicatorDelay: TimeInterval = 0.3
+        /// A turn is a run of one diarizer cluster without a pause longer than this.
+        public var turnPause: TimeInterval = 1.0
+        /// Indicators name a turn when they show exactly one person during at least this share of its words…
+        public var indicatorCoverage: Double = 0.3
+        /// …and that person during this share of those words (otherwise the turn follows them word by word).
+        public var indicatorTurnMajority: Double = 0.75
+        /// Your own tile: a name lit while at least this much of your mic speech (and twice your share of theirs).
+        public var selfTileMinimumSeconds: TimeInterval = 3
 
         public init() {}
     }
@@ -63,13 +73,15 @@ public enum SpeakerAttribution {
     ) -> Result {
         let captionNames = timeline.map { alignCaptions($0.captions, to: words.map(\.word), selfWords: selfWords, options: options) }
             ?? Array(repeating: nil, count: words.count)
+        let speaking = timeline.map { othersSpeaking($0.peopleSpeaking, selfWords: selfWords, themWords: words.map(\.word), options: options) } ?? []
+        let indicatorNames = indicatorNames(words: words, spans: speaking, captioned: captionNames, options: options)
 
         // Votes per cluster: caption-labelled words count 1, speaking indicators 0.5.
         var votes: [String: [String: Double]] = [:]
         for (index, item) in words.enumerated() where item.cluster != unknownID {
             if let name = captionNames[index] {
                 votes[item.cluster, default: [:]][name, default: 0] += 1
-            } else if let name = timeline.flatMap({ soleSpeaker(at: item.word, in: $0.speaking, delay: options.indicatorDelay) }) {
+            } else if let name = indicatorNames[index] {
                 votes[item.cluster, default: [:]][name, default: 0] += 0.5
             }
         }
@@ -102,7 +114,7 @@ public enum SpeakerAttribution {
             if let target = idForName[nameKey(named.name)], target != cluster { merged[cluster] = target }
         }
 
-        // Names only captions know (the diarizer never separated that voice) get new IDs.
+        // Names only the meeting knows (the diarizer never separated that voice) get new IDs.
         var usedIDs = Set(words.map(\.cluster)).union(voices.keys)
         func newID() -> String {
             var n = usedIDs.count + 1
@@ -122,7 +134,7 @@ public enum SpeakerAttribution {
         var labels: [String] = []
         labels.reserveCapacity(words.count)
         for (index, item) in words.enumerated() {
-            if let name = captionNames[index] {
+            if let name = captionNames[index] ?? indicatorNames[index] {
                 let key = nameKey(name)
                 if let id = idForName[key] {
                     labels.append(id)
@@ -142,6 +154,77 @@ public enum SpeakerAttribution {
     static func nameKey(_ name: String) -> String {
         name.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
             .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
+    // MARK: - Speaking indicators
+
+    /// Speaking spans of other people: drops your own tile, which lights while your mic (not the meeting audio)
+    /// has speech.
+    static func othersSpeaking(
+        _ spans: [MeetingSpeakerTimeline.SpeakingSpan], selfWords: [TranscriptWord], themWords: [TranscriptWord], options: Options
+    ) -> [MeetingSpeakerTimeline.SpeakingSpan] {
+        guard !selfWords.isEmpty else { return spans }
+        let selfSorted = selfWords.sorted { $0.start < $1.start }
+        let themSorted = themWords.sorted { $0.start < $1.start }
+        let selfStarts = selfSorted.map(\.start), themStarts = themSorted.map(\.start)
+        var mine: [String: TimeInterval] = [:]
+        var theirs: [String: TimeInterval] = [:]
+        for span in spans {
+            mine[span.name, default: 0] += speech(in: span, words: selfSorted, starts: selfStarts)
+            theirs[span.name, default: 0] += speech(in: span, words: themSorted, starts: themStarts)
+        }
+        let isSelf = Set(mine.filter { $0.value >= options.selfTileMinimumSeconds && $0.value > 2 * (theirs[$0.key] ?? 0) }.keys)
+        return spans.filter { !isSelf.contains($0.name) }
+    }
+
+    /// Seconds of speech in `words` (sorted by start) during the span.
+    private static func speech(in span: MeetingSpeakerTimeline.SpeakingSpan, words: [TranscriptWord], starts: [TimeInterval]) -> TimeInterval {
+        var total: TimeInterval = 0
+        var index = lowerBound(starts, span.start - 5)
+        while index < words.count, words[index].start < span.end {
+            let word = words[index]
+            total += max(0, min(word.end, span.end) - max(word.start, span.start))
+            index += 1
+        }
+        return total
+    }
+
+    /// The speaking-indicator name for each word, decided per turn (a run of one diarizer cluster without a long
+    /// pause). A turn the indicators mostly give to one person is all theirs, since indicators lag and flicker at
+    /// its edges. A turn they split between people (the diarizer missed a change of speaker) follows them word
+    /// by word, and words between take the nearest indicated word's name. Turns with captions follow the captions.
+    static func indicatorNames(
+        words: [(cluster: String, word: TranscriptWord)], spans: [MeetingSpeakerTimeline.SpeakingSpan], captioned: [String?] = [], options: Options
+    ) -> [String?] {
+        var result = [String?](repeating: nil, count: words.count)
+        guard !spans.isEmpty else { return result }
+        let sole = words.map { soleSpeaker(at: $0.word, in: spans, delay: options.indicatorDelay) }
+        var start = 0
+        while start < words.count {
+            var end = start + 1
+            while end < words.count, words[end].cluster == words[start].cluster,
+                  words[end].word.start - words[end - 1].word.end < options.turnPause {
+                end += 1
+            }
+            defer { start = end }
+            if !captioned.isEmpty, (start..<end).contains(where: { captioned[$0] != nil }) { continue }
+            var tally: [String: Int] = [:]
+            for index in start..<end { if let name = sole[index] { tally[name, default: 0] += 1 } }
+            let indicated = tally.values.reduce(0, +)
+            guard indicated >= 2, Double(indicated) >= Double(end - start) * options.indicatorCoverage,
+                  let best = tally.max(by: { ($0.value, $1.key) < ($1.value, $0.key) })
+            else { continue }
+            if Double(best.value) >= Double(indicated) * options.indicatorTurnMajority {
+                for index in start..<end { result[index] = best.key }
+                continue
+            }
+            let marked = (start..<end).filter { sole[$0] != nil }
+            for index in start..<end {
+                let nearest = marked.min { abs($0 - index) < abs($1 - index) }
+                result[index] = nearest.flatMap { sole[$0] }
+            }
+        }
+        return result
     }
 
     /// The one name shown as speaking during the word, if exactly one was.
