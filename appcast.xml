@@ -3,6 +3,22 @@
     <channel>
         <title>PalMeet</title>
         <item>
+            <title>0.2.7</title>
+            <pubDate>Wed, 21 Oct 2026 16:47:50 -0300</pubDate>
+            <sparkle:version>261021164717</sparkle:version>
+            <sparkle:shortVersionString>0.2.7</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<h2>PalMeet 0.2.7</h2><ul>
+<li>Summaries cross the screenshots with the transcript: what was on screen is read in at the moment it appeared (ticket titles, links, file names, names spelled right), without repeating what was already shown.</li>
+<li>The screenshots sent to the AI are the ones that match what people were talking about, spread over the meeting.</li>
+<li>Each topic and decision in summary.md shows the screenshot that illustrates it, right under it.</li>
+<li>To redo an older meeting's summary: Review → Regenerate summary.</li>
+</ul>
+]]></description>
+            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.7.zip" length="15086502" type="application/octet-stream" sparkle:edSignature="LS2CLjZSvxZ6MWaNbqQvhY8mmTXzPl6J3xIZfL4tAtKx66XEu49XHSYJjibEhnxMyWVdJaJBHU8zJhfNnhYGBw=="/>
+        </item>
+        <item>
             <title>0.2.6</title>
             <pubDate>Mon, 19 Oct 2026 14:46:55 -0300</pubDate>
             <sparkle:version>261019144621</sparkle:version>
@@ -31,20 +47,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.5.zip" length="15048157" type="application/octet-stream" sparkle:edSignature="R5kxlrpcAF3gzdIlGSWAfwMEVzIYyLNjFkFvbgRhn5OjbUFvhRpJ/gz2b9tsAooiH2Z+W9Qb1NIEG/mzhPmJBA=="/>
-        </item>
-        <item>
-            <title>0.2.4</title>
-            <pubDate>Thu, 15 Oct 2026 13:11:09 -0300</pubDate>
-            <sparkle:version>261015131036</sparkle:version>
-            <sparkle:shortVersionString>0.2.4</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description><![CDATA[<h2>PalMeet 0.2.4</h2><ul>
-<li>Meeting audio is now compressed (about 6× smaller) once the meeting is transcribed and summarized. Your existing meetings are converted once in the background. Choose Lossless or Original in Settings → Privacy → Recordings.</li>
-<li>"Delete audio after" now also runs while PalMeet stays open for days.</li>
-</ul>
-]]></description>
-            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.4.zip" length="15047178" type="application/octet-stream" sparkle:edSignature="gzOSrZ/S3KgwVnXByrIs6TibxuGikzOt9TO+uLYa6f/IqYYg5nmYiRSjTtCCq2JRTzILRmZ2YzP6Qau1eZOZAQ=="/>
         </item>
     </channel>
 </rss>
