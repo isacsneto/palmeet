@@ -26,11 +26,14 @@ public struct MeetingSummary: Codable, Sendable, Equatable {
         public var title: String
         public var start: String?
         public var summary: String
+        /// The screenshot that best shows this topic, if one does.
+        public var screenshot: String?
 
-        public init(title: String, start: String? = nil, summary: String) {
+        public init(title: String, start: String? = nil, summary: String, screenshot: String? = nil) {
             self.title = title
             self.start = start
             self.summary = summary
+            self.screenshot = screenshot
         }
 
         public init(from decoder: Decoder) throws {
@@ -39,17 +42,23 @@ public struct MeetingSummary: Codable, Sendable, Equatable {
                 return
             }
             let c = try decoder.container(keyedBy: CodingKeys.self)
-            self.init(title: c.lenientString(.title) ?? "Topic", start: c.lenientString(.start), summary: c.lenientString(.summary) ?? "")
+            self.init(
+                title: c.lenientString(.title) ?? "Topic", start: c.lenientString(.start), summary: c.lenientString(.summary) ?? "",
+                screenshot: c.lenientString(.screenshot)
+            )
         }
     }
 
     public struct Decision: Codable, Sendable, Equatable {
         public var text: String
         public var ref: String?
+        /// The screenshot that shows what was decided on, if one does.
+        public var screenshot: String?
 
-        public init(text: String, ref: String? = nil) {
+        public init(text: String, ref: String? = nil, screenshot: String? = nil) {
             self.text = text
             self.ref = ref
+            self.screenshot = screenshot
         }
 
         public init(from decoder: Decoder) throws {
@@ -58,7 +67,7 @@ public struct MeetingSummary: Codable, Sendable, Equatable {
                 return
             }
             let c = try decoder.container(keyedBy: CodingKeys.self)
-            self.init(text: c.lenientString(.text) ?? "", ref: c.lenientString(.ref))
+            self.init(text: c.lenientString(.text) ?? "", ref: c.lenientString(.ref), screenshot: c.lenientString(.screenshot))
         }
     }
 
@@ -194,8 +203,8 @@ public struct MeetingSummary: Codable, Sendable, Equatable {
       "title": "short meeting title",
       "tldr": "2-4 sentence overview",
       "participants": [{"name": "Name", "role": "role if known"}],
-      "topics": [{"title": "Topic", "start": "00:03:10", "summary": "what was discussed"}],
-      "decisions": [{"text": "what was decided", "ref": "00:21:05"}],
+      "topics": [{"title": "Topic", "start": "00:03:10", "summary": "what was discussed", "screenshot": "screenshots/0004_00-03-12.jpg or null"}],
+      "decisions": [{"text": "what was decided", "ref": "00:21:05", "screenshot": "screenshots/… or null"}],
       "action_items": [{"owner": "Name", "task": "what", "due": "when, if said", "ref": "00:40:12"}],
       "key_takeaways": ["..."],
       "open_questions": ["..."],

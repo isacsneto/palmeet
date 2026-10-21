@@ -88,7 +88,10 @@ public enum SummaryMarkdownRenderer {
 
         if !summary.decisions.isEmpty {
             md.append("## Decisions")
-            md += summary.decisions.map { "- \($0.text)\(MarkdownHeader.ref($0.ref))" }
+            for decision in summary.decisions {
+                md.append("- \(decision.text)\(MarkdownHeader.ref(decision.ref))")
+                if let image = image(decision.screenshot, alt: decision.text) { md.append("  \(image)") }
+            }
             md.append("")
         }
 
@@ -109,6 +112,10 @@ public enum SummaryMarkdownRenderer {
             for topic in summary.topics {
                 md.append("### \(topic.title)\(MarkdownHeader.ref(topic.start))")
                 md.append(topic.summary)
+                if let image = image(topic.screenshot, alt: topic.title) {
+                    md.append("")
+                    md.append(image)
+                }
                 md.append("")
             }
         }
@@ -123,13 +130,14 @@ public enum SummaryMarkdownRenderer {
             md.append("")
         }
 
-        if !summary.visualContext.isEmpty {
+        // Other screens worth seeing; one already shown with its topic or decision isn't repeated.
+        let shown = Set((summary.topics.map(\.screenshot) + summary.decisions.map(\.screenshot)).compactMap { $0 })
+        let visual = summary.visualContext.filter { $0.screenshot.map { !shown.contains($0) } ?? true }
+        if !visual.isEmpty {
             md.append("## Visual context")
-            for item in summary.visualContext {
+            for item in visual {
                 md.append("- \(item.description)\(MarkdownHeader.ref(item.ref))")
-                if let path = item.screenshot, !path.isEmpty {
-                    md.append("  ![\(MarkdownHeader.cell(item.description))](\(path.replacingOccurrences(of: " ", with: "%20")))")
-                }
+                if let image = image(item.screenshot, alt: item.description) { md.append("  \(image)") }
             }
             md.append("")
         }
@@ -137,6 +145,11 @@ public enum SummaryMarkdownRenderer {
         md.append("---")
         md.append("*Full transcript: [transcript.md](transcript.md)*")
         return md.joined(separator: "\n")
+    }
+
+    private static func image(_ path: String?, alt: String) -> String? {
+        guard let path, !path.isEmpty else { return nil }
+        return "![\(MarkdownHeader.cell(alt))](\(path.replacingOccurrences(of: " ", with: "%20")))"
     }
 
     private static func appendList(_ title: String, _ items: [String], to md: inout [String]) {
