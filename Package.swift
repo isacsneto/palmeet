@@ -23,7 +23,9 @@ let package = Package(
         // OCR and frame change detection for screenshots.
         .target(name: "VisionContext"),
         // Window/app discovery, Core Audio process taps, microphone, window sampling.
-        .target(name: "CaptureKit"),
+        .target(name: "CaptureKit", dependencies: ["ObjCExceptions"]),
+        // Catches Objective-C exceptions some Apple audio APIs raise, so they fail instead of aborting the app.
+        .target(name: "ObjCExceptions"),
         // Localhost bridge to the companion Chromium extension (per-tab audio/video).
         .target(name: "BrowserBridge"),
         // Speech-to-text, diarization and transcript assembly.
@@ -48,7 +50,7 @@ let package = Package(
 
         .testTarget(name: "SessionKitTests", dependencies: ["SessionKit"]),
         .testTarget(name: "VisionContextTests", dependencies: ["VisionContext"]),
-        .testTarget(name: "CaptureKitTests", dependencies: ["CaptureKit", "TranscriptKit", "SessionKit"]),
+        .testTarget(name: "CaptureKitTests", dependencies: ["CaptureKit", "TranscriptKit", "SessionKit", "ObjCExceptions"]),
         .testTarget(name: "TranscriptKitTests", dependencies: ["TranscriptKit"]),
         .testTarget(name: "LLMKitTests", dependencies: ["LLMKit"]),
         .testTarget(name: "CopilotKitTests", dependencies: ["CopilotKit"]),

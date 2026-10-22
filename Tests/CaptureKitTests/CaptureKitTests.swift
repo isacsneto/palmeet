@@ -2,6 +2,7 @@
 import Foundation
 import Testing
 @testable import CaptureKit
+import ObjCExceptions
 
 func tempURL(_ name: String) -> URL {
     FileManager.default.temporaryDirectory.appending(path: "palmeet-capture-\(UUID().uuidString)").appending(path: name)
@@ -241,5 +242,17 @@ func zeroCrossingFrequency(_ samples: [Float], rate: Double) -> Double {
         let date = HostTime.date(for: nowHost - halfSecond, now: now, nowHostTime: nowHost)
         #expect(abs(date.timeIntervalSince(now) + 0.5) < 0.001)
         #expect(HostTime.date(for: 0, now: now) == now)
+    }
+}
+
+@Suite struct ObjCExceptionTests {
+    @Test func objectiveCExceptionsBecomeErrors() {
+        var error: NSError?
+        let ok = PMCatchObjCException({
+            NSException(name: .invalidArgumentException, reason: "format mismatch", userInfo: nil).raise()
+        }, &error)
+        #expect(!ok)
+        #expect(error?.localizedDescription == "format mismatch")
+        #expect(PMCatchObjCException({}, nil))
     }
 }

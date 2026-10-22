@@ -1,5 +1,6 @@
 @preconcurrency import AVFoundation
 import Foundation
+import ObjCExceptions
 import os
 
 /// A shared microphone that any number of sessions can subscribe to.
@@ -10,9 +11,16 @@ public protocol MicrophoneSource: AnyObject, Sendable {
 
 public enum MicrophoneError: Error, LocalizedError {
     case noInputDevice
+    /// The audio system refused the setup, typically because the input device changed while starting.
+    case setupFailed(String)
 
     public var errorDescription: String? {
-        "No microphone input is available. Connect a microphone or pick an input device in System Settings → Sound."
+        switch self {
+        case .noInputDevice:
+            "No microphone input is available. Connect a microphone or pick an input device in System Settings → Sound."
+        case .setupFailed(let reason):
+            "The microphone couldn't start: \(reason)"
+        }
     }
 }
 
@@ -44,6 +52,11 @@ public final class MicrophoneCapture: MicrophoneSource, @unchecked Sendable {
     private var running = false
     private var configObserver: NSObjectProtocol?
     private var restartAttempts = 0
+    // Only touched on `control`. Bumped to cancel a scheduled restart.
+    private var restartGeneration = 0
+    /// Device changes come in bursts (an iPhone microphone connecting, Bluetooth switching profiles); restart
+    /// once they settle.
+    private let restartSettleDelay: TimeInterval = 0.5
     private let logger = Logger(subsystem: "app.palmeet", category: "Microphone")
 
     public var voiceProcessingEnabled = true
@@ -124,13 +137,22 @@ public final class MicrophoneCapture: MicrophoneSource, @unchecked Sendable {
         }
 
         let format = input.outputFormat(forBus: 0)
-        // installTap raises an Objective-C exception (uncatchable) on a 0 Hz / 0-channel format: no input device.
+        // A 0 Hz / 0-channel format: no input device.
         guard format.sampleRate > 0, format.channelCount > 0 else { throw MicrophoneError.noInputDevice }
-        input.removeTap(onBus: 0)
-        input.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, when in
-            self?.handle(buffer, hostTime: when.isHostTimeValid ? when.hostTime : 0)
+        // installTap raises an Objective-C exception (which Swift can't catch, so the app aborts) when the format
+        // no longer matches the hardware: a device appeared or vanished while starting. Fail and retry instead.
+        var setupError: NSError?
+        let installed = PMCatchObjCException({
+            input.removeTap(onBus: 0)
+            input.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, when in
+                self?.handle(buffer, hostTime: when.isHostTimeValid ? when.hostTime : 0)
+            }
+            self.engine.prepare()
+        }, &setupError)
+        guard installed else {
+            _ = PMCatchObjCException({ input.removeTap(onBus: 0) }, nil)
+            throw MicrophoneError.setupFailed(setupError?.localizedDescription ?? "unknown error")
         }
-        engine.prepare()
         do {
             try engine.start()
         } catch {
@@ -148,17 +170,20 @@ public final class MicrophoneCapture: MicrophoneSource, @unchecked Sendable {
                 guard let self else { return }
                 let sender = note.object.map { ObjectIdentifier($0 as AnyObject) }
                 self.control.async {
-                    // Only our current engine (it's replaced when falling back from voice processing).
+                    // Only our current engine (it's replaced on every restart and when falling back from voice
+                    // processing).
                     guard sender == ObjectIdentifier(self.engine) else { return }
-                    self.restartAfterDeviceChangeLocked()
+                    self.restartAttempts = 0
+                    self.scheduleRestartLocked(after: self.restartSettleDelay)
                 }
             }
         }
     }
 
-    /// A fresh engine: voice processing can't be reliably turned off on an engine whose start failed.
+    /// A fresh engine: voice processing can't be reliably turned off on an engine whose start failed, and an
+    /// engine that lived through a device change can keep the old device's format.
     private func resetEngineLocked() {
-        engine.inputNode.removeTap(onBus: 0)
+        _ = PMCatchObjCException({ self.engine.inputNode.removeTap(onBus: 0) }, nil)
         engine.stop()
         engine = AVAudioEngine()
         running = false
@@ -175,31 +200,42 @@ public final class MicrophoneCapture: MicrophoneSource, @unchecked Sendable {
         targets.forEach { $0.yield(chunk) }
     }
 
-    /// AirPods connecting, default input changing, etc. reconfigure the engine and stop it. Retries with backoff
-    /// (the new device may not be ready yet) while anyone is subscribed.
+    /// Restarts after `delay`, replacing any restart already scheduled.
+    private func scheduleRestartLocked(after delay: TimeInterval) {
+        restartGeneration += 1
+        let generation = restartGeneration
+        control.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, generation == self.restartGeneration else { return }
+            self.restartAfterDeviceChangeLocked()
+        }
+    }
+
+    /// AirPods connecting, default input changing, etc. reconfigure the engine and stop it. Starts a fresh engine
+    /// (it reads the new device's format) and retries with backoff (the new device may not be ready yet) while
+    /// anyone is subscribed.
     private func restartAfterDeviceChangeLocked() {
         let hasSubscribers = subscribersLock.withLock { !subscribers.isEmpty }
         guard hasSubscribers else { return }
-        logger.info("Audio configuration changed; restarting microphone")
-        teardownEngineLocked()
+        logger.notice("Audio configuration changed; restarting microphone")
+        resetEngineLocked()
         do {
             try startIfNeededLocked()
         } catch {
             restartAttempts += 1
             logger.error("Microphone restart \(self.restartAttempts) failed: \(error.localizedDescription, privacy: .public)")
             guard restartAttempts <= 10 else { return }
-            let delay = min(5.0, 0.5 * Double(restartAttempts))
-            control.asyncAfter(deadline: .now() + delay) { [weak self] in self?.restartAfterDeviceChangeLocked() }
+            scheduleRestartLocked(after: min(5.0, 0.5 * Double(restartAttempts)))
         }
     }
 
     private func teardownEngineLocked() {
-        engine.inputNode.removeTap(onBus: 0)
+        _ = PMCatchObjCException({ self.engine.inputNode.removeTap(onBus: 0) }, nil)
         engine.stop()
         running = false
     }
 
     private func stopEngineLocked() {
+        restartGeneration += 1
         if let configObserver {
             NotificationCenter.default.removeObserver(configObserver)
             self.configObserver = nil
