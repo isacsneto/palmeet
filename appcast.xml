@@ -3,6 +3,19 @@
     <channel>
         <title>PalMeet</title>
         <item>
+            <title>0.2.8</title>
+            <pubDate>Thu, 22 Oct 2026 14:44:05 -0300</pubDate>
+            <sparkle:version>261022144312</sparkle:version>
+            <sparkle:shortVersionString>0.2.8</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<h2>PalMeet 0.2.8</h2><ul>
+<li>Fixed a crash when the microphone changed during a recording (for example an iPhone Continuity microphone connecting or dropping). PalMeet now waits for the change to settle and restarts the microphone cleanly.</li>
+</ul>
+]]></description>
+            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.8.zip" length="15089410" type="application/octet-stream" sparkle:edSignature="KdX4Vllj2LD0iI3mRY4uJ/y3LFyGeIDZxJNJzCoOHpeZ3mth1Nr4uTGvsTiWy5dttGL6FpkFB1uNbOFNpvqYDg=="/>
+        </item>
+        <item>
             <title>0.2.7</title>
             <pubDate>Wed, 21 Oct 2026 16:47:50 -0300</pubDate>
             <sparkle:version>261021164717</sparkle:version>
@@ -33,20 +46,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.6.zip" length="15062128" type="application/octet-stream" sparkle:edSignature="mxClrejX2ceipg9DpdBc54xyow0xK8EI3LlvIg2W465R6F2QZRrSyskEqTGBMprcyrb2ymwFZTkgh7tPxp9rBw=="/>
-        </item>
-        <item>
-            <title>0.2.5</title>
-            <pubDate>Thu, 15 Oct 2026 13:13:33 -0300</pubDate>
-            <sparkle:version>261015131246</sparkle:version>
-            <sparkle:shortVersionString>0.2.5</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description><![CDATA[<h2>PalMeet 0.2.5</h2><ul>
-<li>Meeting audio is compressed (about 6× smaller) once the meeting is transcribed and summarized; existing meetings are converted once. Choose Lossless or Original in Settings → Privacy → Recordings.</li>
-<li>"Delete audio after" counts from when PalMeet saved the meeting (an imported old video keeps its audio for the full period) and also runs while PalMeet stays open.</li>
-</ul>
-]]></description>
-            <enclosure url="https://raw.githubusercontent.com/isacsneto/palmeet/releases/PalMeet-0.2.5.zip" length="15048157" type="application/octet-stream" sparkle:edSignature="R5kxlrpcAF3gzdIlGSWAfwMEVzIYyLNjFkFvbgRhn5OjbUFvhRpJ/gz2b9tsAooiH2Z+W9Qb1NIEG/mzhPmJBA=="/>
         </item>
     </channel>
 </rss>
